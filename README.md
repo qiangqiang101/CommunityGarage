@@ -14,12 +14,11 @@ server. The game's Share, Find, Suggested and download screens work again, as th
 - **Share** your liveries, tunes and group vinyls with the Share option you already know.
 - **Find** other players' designs through the game's search screens, and the **Suggested / Recommended** tabs for the car you're looking at.
 - **Download** a livery, tune or group vinyl and use it straight away.
-- **My Files** lists what you've shared, and you can delete your own uploads.
 - Works with the game as it is: no extra program to run. It's a mod for the [FH2 Mod Platform](https://github.com/Trinculo54/fh2-mod-platform).
 
 ## Requirements
 
-- Forza Horizon 2 for PC, run with **Azimuth** (tested with Azimuth 0.9.10).
+- Forza Horizon 2 for PC, run with **Azimuth** (tested with Azimuth 0.9.10-1.0.2).
 - Windows 10 or 11, 64-bit.
 - An internet connection (to reach the community server).
 - The **FH2 Mod Platform**: it's `d3dcompiler_47.dll` next to `azimuth.exe`, and the download below already includes it
@@ -114,7 +113,7 @@ For a detailed log, turn on **Detailed log (troubleshooting)** on the MODS page 
 ### Repositories
 
 - **This repository**: the mod (`CommunityGarage.dll`), its packaging and the research notes.
-- **CommunityTunes&LiveriesServer**: the community server (Node.js, MySQL optional), kept in its own repository.
+- **CommunityGarageServer**: the community server (Node.js, MySQL optional), kept in its own repository.
 
 ### Layout
 
