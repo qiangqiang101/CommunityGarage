@@ -659,6 +659,7 @@ const AzBuild kAzBuilds[] = {
     {0x6AD14833, {0x41D20, 0xD3E20, 0x16AF10}, 0xD3EAD},      // 0.9.10
     {0x6ADFF280, {0x421D0, 0x2A6A50, 0x5DA0F0}, 0x2A6ADD},    // 1.0.1
     {0x6AE05DD1, {0x413D0, 0x2AA480, 0x5DE870}, 0x2AA50D},    // 1.0.2
+    {0x6AE0F17A, {0x42110, 0x2B4FE0, 0x5EAC10}, 0x2B506D},    // 1.0.3
 };
 const AzBuild* az_build() {
     static const AzBuild* found = [] () -> const AzBuild* {

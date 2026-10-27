@@ -18,7 +18,7 @@ server. The game's Share, Find, Suggested and download screens work again, as th
 
 ## Requirements
 
-- Forza Horizon 2 for PC, run with **Azimuth** (tested with Azimuth 0.9.10-1.0.2).
+- Forza Horizon 2 for PC, run with **Azimuth** (tested with Azimuth 0.9.10-1.0.3).
 - Windows 10 or 11, 64-bit.
 - An internet connection (to reach the community server).
 - The **FH2 Mod Platform**: it's `d3dcompiler_47.dll` next to `azimuth.exe`, and the download below already includes it

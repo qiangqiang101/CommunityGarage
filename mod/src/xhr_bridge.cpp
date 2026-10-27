@@ -34,6 +34,8 @@ constexpr AzimuthBuild kBuilds[] = {
                                      0x66BE80, 0x66BE90, 0x66BEA0, 0x66BEB0, 0x66BEE0, 0x66BF20}},
     {0x6AE05DD1, "1.0.2", 0x822A58, {0x670730, 0x670720, 0x6706E0, 0x670350, 0x670410, 0x670530, 0x6705A0,
                                      0x6705C0, 0x6705D0, 0x6705E0, 0x6705F0, 0x670620, 0x670660}},
+    {0x6AE0F17A, "1.0.3", 0x8493F8, {0x67C410, 0x67C400, 0x67C3C0, 0x67C030, 0x67C0F0, 0x67C210, 0x67C280,
+                                     0x67C2A0, 0x67C2B0, 0x67C2C0, 0x67C2D0, 0x67C300, 0x67C340}},
 };
 enum Slot { kQueryInterface, kAddRef, kRelease, kOpen, kSend, kAbort, kSetCookie, kSetCustomResponseStream,
             kSetProperty, kSetRequestHeader, kGetAllResponseHeaders, kGetCookie, kGetResponseHeader };
@@ -671,7 +673,7 @@ bool xhr_bridge_install(const FH2ModApi* api, FH2Mod* mod, const BridgeConfig& c
     for (const AzimuthBuild& b : kBuilds)
         if (nt->FileHeader.TimeDateStamp == b.timestamp) build = &b;
     if (!build) {
-        logf("HTTP bridge: azimuth.exe build 0x%08lx isn't one this was written for (0.9.10, 1.0.1, 1.0.2); not hooking",
+        logf("HTTP bridge: azimuth.exe build 0x%08lx isn't one this was written for (0.9.10, 1.0.1, 1.0.2, 1.0.3); not hooking",
              (unsigned long)nt->FileHeader.TimeDateStamp);
         return false;
     }
