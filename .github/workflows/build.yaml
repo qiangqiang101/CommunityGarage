@@ -59,12 +59,12 @@ jobs:
           export PATH=/opt/llvm-mingw/bin:$PATH
           cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=platform/cmake/mingw-w64-x86_64.cmake -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j "$(nproc)"
-          ls -l build/CommunityGarage.dll build/platform/d3dcompiler_47.dll
+          ls -l build/CommunityGarage.dll build/platform/DWrite.dll
 
       - name: Package the player zip
         env:
           BUILD_NAME: ${{ steps.name.outputs.name }}
-        run: bash packaging/package-player.sh build/CommunityGarage.dll build/platform/d3dcompiler_47.dll "dist/${BUILD_NAME}.zip"
+        run: bash packaging/package-player.sh build/CommunityGarage.dll build/platform/DWrite.dll "dist/${BUILD_NAME}.zip"
 
       - name: Upload the zip
         uses: actions/upload-artifact@v4

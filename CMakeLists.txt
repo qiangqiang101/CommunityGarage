@@ -7,7 +7,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-add_subdirectory(platform)   # fh2mod_platform (d3dcompiler_47.dll) and fh2mod_api
+add_subdirectory(platform)   # fh2mod_platform (DWrite.dll) and fh2mod_api
 
 add_library(communitygarage SHARED mod/src/communitygarage.cpp mod/src/xhr_bridge.cpp)
 target_link_libraries(communitygarage PRIVATE fh2mod_api winhttp bcrypt ole32 uuid)

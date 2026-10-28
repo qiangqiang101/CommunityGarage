@@ -135,7 +135,7 @@ With llvm-mingw, CMake and Ninja (the code uses MSVC-style SEH, which needs clan
 cmake -S . -B build -G Ninja -DCMAKE_C_COMPILER=x86_64-w64-mingw32-clang -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-clang++ -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres
 cmake --build build
 ```
-This produces `build/CommunityGarage.dll` and `build/platform/d3dcompiler_47.dll`. On Linux, cross-compile with
+This produces `build/CommunityGarage.dll` and `build/platform/DWrite.dll`. On Linux, cross-compile with
 `-DCMAKE_TOOLCHAIN_FILE=platform/cmake/mingw-w64-x86_64.cmake`.
 
 Then `packaging\package-player.ps1` (Windows) or `packaging/package-player.sh <mod dll> <platform dll> <out.zip>` makes the player zip.
