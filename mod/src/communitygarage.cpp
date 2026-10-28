@@ -1164,7 +1164,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     g_mod = api->register_mod(&info);
     if (!g_mod) return 1;
     if (api->api_version < 7) {
-        api->log(g_mod, "needs platform API 7 (byte patches); reinstall with a newer d3dcompiler_47.dll");
+        api->log(g_mod, "needs platform API 7 (byte patches); reinstall with a newer DWrite.dll");
         return 1;
     }
     g_ini_path = std::wstring(api->azimuth_dir) + L"/communitygarage/server.ini";
