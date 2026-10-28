@@ -11,10 +11,10 @@ INSTALL (1 minute)
 2. Extract this zip into your Azimuth folder (the one that contains azimuth.exe), keeping the folders as they are.
    You end up with:
       azimuth.exe
-      d3dcompiler_47.dll                 <- the FH2 Mod Platform (shared by all FH2 mods)
+      DWrite.dll                         <- the FH2 Mod Platform (shared by all FH2 mods)
       fh2-mods\CommunityGarage.dll
       communitygarage\server.ini
-   If Windows asks to replace d3dcompiler_47.dll: say yes if yours is older or you are unsure. If you already use other
+   If Windows asks to replace DWrite.dll: say yes if yours is older or you are unsure. If you already use other
    FH2 mods, they use the same file, so it is safe. Do not delete files you already have in fh2-mods.
 3. Start the game as usual.
 
@@ -51,7 +51,7 @@ TROUBLESHOOTING
 
 REMOVE
 Delete fh2-mods\CommunityGarage.dll and the communitygarage folder. (To remove the platform and every mod built on
-it, delete d3dcompiler_47.dll and the fh2-mods folder.)
+it, delete DWrite.dll and the fh2-mods folder.)
 
 CONTACT / TAKEDOWN REQUESTS
 <ADD YOUR CONTACT ADDRESS HERE>

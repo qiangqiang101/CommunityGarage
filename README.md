@@ -21,8 +21,8 @@ server. The game's Share, Find, Suggested and download screens work again, as th
 - Forza Horizon 2 for PC, run with **Azimuth** (tested with Azimuth 0.9.10-1.0.3).
 - Windows 10 or 11, 64-bit.
 - An internet connection (to reach the community server).
-- The **FH2 Mod Platform**: it's `d3dcompiler_47.dll` next to `azimuth.exe`, and the download below already includes it
-  (version 2.7.2). If you use other FH2 mods you have it already; it's one shared file.
+- The **FH2 Mod Platform**: it's `DWrite.dll` next to `azimuth.exe`, and the download below already includes it
+  (version 2.7.4). If you use other FH2 mods you have it already; it's one shared file.
 - Works alongside other platform mods (it has been used with Achievements, FnFNitro, ShowFPS, WheresMyBuddy and WreckingBall)
   and with Extra Options.
 
@@ -34,11 +34,11 @@ server. The game's Share, Find, Suggested and download screens work again, as th
 
    ```
    azimuth.exe
-   d3dcompiler_47.dll                  <- the FH2 Mod Platform (shared by all FH2 mods)
+   DWrite.dll                          <- the FH2 Mod Platform (shared by all FH2 mods)
    fh2-mods\CommunityGarage.dll
    communitygarage\server.ini
    ```
-   If Windows asks to replace `d3dcompiler_47.dll`, say **yes** unless yours is newer than 2.7.2. Don't delete anything
+   If Windows asks to replace `DWrite.dll`, say **yes** unless yours is newer than 2.7.4. Don't delete anything
    else that is already in `fh2-mods`.
 4. Start the game. The first time, the mod makes your account key (see below). Nothing else to set up.
 
@@ -90,7 +90,7 @@ Close the game and delete:
 - `fh2-mods\CommunityGarage.dll`
 - the `communitygarage` folder (this holds your account key)
 
-To remove the FH2 Mod Platform and **every** mod built on it, also delete `d3dcompiler_47.dll` and the `fh2-mods` folder.
+To remove the FH2 Mod Platform and **every** mod built on it, also delete `DWrite.dll` and the `fh2-mods` folder.
 Your game saves aren't touched. Designs you downloaded stay in your garage.
 
 ## Troubleshooting
@@ -101,7 +101,7 @@ Your game saves aren't touched. Designs you downloaded stay in your garage.
 | "The saved copy of this item is not on this server" when sharing | The game remembers it already uploaded this item somewhere else. Change it slightly, or save a copy, and share again. |
 | "Design Unavailable" / "Failed to download design" on one livery | That livery is probably over the game's download limit of about 337 KB (see Limits). Liveries uploaded before the server enforced the limit can still be on the server and can't be opened by anyone. Other liveries download normally. |
 | A share is refused | The server checks every upload for broken files and offensive text. The game only shows a generic error; the reason is in the server's log, so ask the server's operator. Check the title and keywords first. |
-| No `[CommunityGarage]` lines in `platform.log` | The mod didn't load. Check that `d3dcompiler_47.dll` is next to `azimuth.exe` and that `fh2-mods\CommunityGarage.dll` exists. |
+| No `[CommunityGarage]` lines in `platform.log` | The mod didn't load. Check that `DWrite.dll` is next to `azimuth.exe` and that `fh2-mods\CommunityGarage.dll` exists. |
 | Creator name shows with `#2` | Someone already uses your gamertag on the server; a number keeps names unique. |
 | The game crashes | Send the newest files in `fh2-mods\crashes` and `data\logs`. |
 
