@@ -53,7 +53,7 @@ bool g_debug      = false;      // [debug] trace=1: diagnostic hooks and verbose
 bool g_econ_scan  = false;      // experiment: scan memory for the economy object (see scan_economy)
 bool g_econ_probe = false;      // experiment: [experiments] economy_probe=1, also runs the scan
 bool g_token_text = false;      // experiment: non-empty Xbox token (see on_token_strings)
-int  g_skip_streams = -1;       // [azimuth] skip_livery_texture_streams: 1 on, 0 off, unset = only on Azimuth 0.9.10 (install_pack_skip)
+int  g_skip_streams = -1;       // [azimuth] skip_livery_texture_streams: 1 on, 0 off, unset = on (install_pack_skip)
 
 void logf(const char* fmt, ...) {
     char line[256];
@@ -162,7 +162,7 @@ bool load_config(const wchar_t* dir) {
     return true;
 }
 
-// ---- Azimuth 0.9.10 stops ("CreatePlacementTexture2D requires GPU-write/CPU-map/unknown placement semantics") when
+// ---- Azimuth (0.9.10 through 1.0.3) stops ("CreatePlacementTexture2D requires GPU-write/CPU-map/unknown placement semantics") when
 // CLiveryRenderManager::SaveRenderToStream (game+0x122E2C0) packs the texture streams of a fully composed livery: its
 // packer game+0x122E450 asks for a 1024x1024 CPU-readable placement texture that Azimuth doesn't implement. The job runs
 // after every full layer composition (modes 2 and 4 always, mode 5 once all layer groups are composed), and once the
@@ -178,16 +178,12 @@ void pack_skip(void* res) {
     if (InterlockedIncrement(&n) <= 5)
         logf("livery texture streams: pack skipped for resource %p (Azimuth has no CPU-readable placement textures) (#%ld)", res, n);
 }
-// azimuth.exe 0.9.10 (PE timestamp 0x6AD14833, the build xhr_bridge.cpp is written for) is the one known to lack
-// CPU-readable placement textures. Unless server.ini says otherwise, the pack is skipped only on that build.
-bool azimuth_is_0910() {
-    auto* b = reinterpret_cast<const uint8_t*>(GetModuleHandleW(nullptr));
-    auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(b + reinterpret_cast<const IMAGE_DOS_HEADER*>(b)->e_lfanew);
-    return nt->FileHeader.TimeDateStamp == 0x6AD14833u;
-}
+// Every Azimuth build so far lacks CPU-readable placement textures (0.9.10 asked for 1024x1024; 1.0.3 stops the same
+// way on a 4096x4096 13-mip one, from this packer, while composing drivatar liveries), so the pack is skipped on all
+// builds unless server.ini says otherwise.
 void install_pack_skip(uintptr_t base) {
-    bool on = g_skip_streams < 0 ? azimuth_is_0910() : g_skip_streams != 0;
-    if (!on) { logf("livery texture streams: left as the game does it (%s)", g_skip_streams < 0 ? "not the Azimuth 0.9.10 build" : "[azimuth] skip_livery_texture_streams=0"); return; }
+    bool on = g_skip_streams != 0;
+    if (!on) { logf("livery texture streams: left as the game does it ([azimuth] skip_livery_texture_streams=0)"); return; }
     static const uint8_t expect[] = {0x40, 0x55, 0x56, 0x57, 0x48, 0x8b, 0xec, 0x48, 0x83, 0xec, 0x70};   // push rbp; push rsi; push rdi; mov rbp,rsp; sub rsp,0x70
     uint8_t got[sizeof expect] = {};
     void* at = reinterpret_cast<void*>(base + (0x14122E450 - kImageBase));
@@ -195,7 +191,7 @@ void install_pack_skip(uintptr_t base) {
         logf("livery texture streams: game+0x122E450 doesn't look as expected; not hooking (the game keeps packing them)");
         return;
     }
-    FH2Hook* h = g_api->hook_function(g_mod, "CLiveryRenderManager::SaveRenderToStream pack (skipped: Azimuth 0.9.10)", at,
+    FH2Hook* h = g_api->hook_function(g_mod, "CLiveryRenderManager::SaveRenderToStream pack (skipped: Azimuth has no CPU-readable placement textures)", at,
                                       reinterpret_cast<void*>(&pack_skip), reinterpret_cast<void**>(&g_pack_orig));
     if (!h) logf("livery texture streams: hook failed; the game keeps packing them");
 }
@@ -1030,6 +1026,9 @@ DWORD WINAPI worker(LPVOID) {
         else if (ab)
             logf("Azimuth token request: the call isn't where expected; not hooked");
     }
+    // Switch these on now: with [debug] trace=1 installing the hooks below takes seconds, and the logon reply can
+    // reach the listener before then and crash the game (null write at game+0x9C898F).
+    g_api->enable_hooks(g_mod, nullptr);
     if (g_econ_probe || g_econ_scan) CreateThread(nullptr, 0, econ_scan_thread, nullptr, 0, nullptr);
 
     if (g_debug) {
