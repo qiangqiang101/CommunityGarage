@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(communitygarage VERSION 1.1.5 LANGUAGES C CXX RC)
+project(communitygarage VERSION 1.1.6 LANGUAGES C CXX RC)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,8 +9,8 @@ endif()
 
 add_subdirectory(platform)   # fh2mod_platform (DWrite.dll) and fh2mod_api
 
-add_library(communitygarage SHARED mod/src/communitygarage.cpp mod/src/xhr_bridge.cpp)
-target_link_libraries(communitygarage PRIVATE fh2mod_api winhttp bcrypt ole32 uuid)
+add_library(communitygarage SHARED mod/src/communitygarage.cpp mod/src/notify.cpp mod/src/xhr_bridge.cpp)
+target_link_libraries(communitygarage PRIVATE fh2mod_api winhttp bcrypt ole32 uuid version)
 set_target_properties(communitygarage PROPERTIES OUTPUT_NAME CommunityGarage PREFIX "")
 target_compile_definitions(communitygarage PRIVATE COMMUNITYGARAGE_VERSION="${PROJECT_VERSION}")
 if(MSVC)

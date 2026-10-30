@@ -8,6 +8,7 @@
 // ".Trial" twin). We swap the host and port pointers of those two entries for
 // strings of our own, from communitygarage\server.ini next to azimuth.exe.
 #include "fh2mod.h"
+#include "notify.hpp"
 #include "xhr_bridge.hpp"
 
 #include <windows.h>
@@ -656,6 +657,7 @@ const AzBuild kAzBuilds[] = {
     {0x6ADFF280, {0x421D0, 0x2A6A50, 0x5DA0F0}, 0x2A6ADD},    // 1.0.1
     {0x6AE05DD1, {0x413D0, 0x2AA480, 0x5DE870}, 0x2AA50D},    // 1.0.2
     {0x6AE0F17A, {0x42110, 0x2B4FE0, 0x5EAC10}, 0x2B506D},    // 1.0.3
+    {0x6AE393EB, {0x41680, 0x1A43F0, 0x4C5390}, 0x1A447D},    // 1.0.4
 };
 const AzBuild* az_build() {
     static const AzBuild* found = [] () -> const AzBuild* {
@@ -997,6 +999,7 @@ DWORD WINAPI worker(LPVOID) {
         if (!h || !g_api->enable_hooks(g_mod, h)) logf("Clubs tab: the game code didn't look as expected, leaving it alone");
     }
     install_pack_skip(base);
+    notify_install(g_api, g_mod, base);
     // What changes the game's behaviour: the date default, the Xbox token callback and strings, the login-listener skip, the poll
     // intervals, and Azimuth's token request. Everything else (below, under g_debug) only logs.
     if (g_api->api_version >= 7) {
@@ -1148,6 +1151,44 @@ static void add_mods_page_rows(const FH2ModApi* api) {
     }
 }
 
+// The version azimuth.exe says it is ("1.0.5"), from its version resource; empty if it has none.
+static std::string azimuth_version() {
+    wchar_t path[MAX_PATH];
+    DWORD n = GetModuleFileNameW(nullptr, path, MAX_PATH);
+    if (!n || n == MAX_PATH) return {};
+    DWORD size = GetFileVersionInfoSizeW(path, nullptr);
+    if (!size) return {};
+    std::vector<uint8_t> info(size);
+    VS_FIXEDFILEINFO* fixed = nullptr;
+    UINT len = 0;
+    if (!GetFileVersionInfoW(path, 0, size, info.data()) || !VerQueryValueW(info.data(), L"\\", reinterpret_cast<void**>(&fixed), &len) ||
+        !fixed || len < sizeof *fixed)
+        return {};
+    char v[32];
+    std::snprintf(v, sizeof v, "%u.%u.%u", HIWORD(fixed->dwFileVersionMS), LOWORD(fixed->dwFileVersionMS), HIWORD(fixed->dwFileVersionLS));
+    return v;
+}
+
+// An Azimuth release the HTTP bridge wasn't written for: no request would reach the server, and the mod's sign-in hooks
+// assume they do (they can leave the game stuck signing in). So the mod stays off, the game plays as Azimuth does
+// offline, and the title screen says why. The notice is kept in a file by the platform, so a known build clears it.
+static bool azimuth_supported(const FH2ModApi* api) {
+    if (const char* known = xhr_bridge_known_build()) {
+        api->set_notice(g_mod, "");
+        logf("Azimuth %s", known);
+        return true;
+    }
+    std::string version = azimuth_version();
+    auto* base = reinterpret_cast<uint8_t*>(GetModuleHandleW(nullptr));
+    auto* nt   = reinterpret_cast<IMAGE_NT_HEADERS*>(base + reinterpret_cast<IMAGE_DOS_HEADER*>(base)->e_lfanew);
+    logf("Azimuth %s (azimuth.exe build 0x%08lx) isn't supported by this version; the mod is off, so the game plays offline",
+         version.empty() ? "?" : version.c_str(), (unsigned long)nt->FileHeader.TimeDateStamp);
+    std::string notice = "Community Garage doesn't support\nAzimuth " + (version.empty() ? std::string("this version") : version) +
+                         " yet, so sharing is off.\nLook for a Community Garage update.";
+    api->set_notice(g_mod, notice.c_str());
+    return false;
+}
+
 FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     g_api = api;
     FH2ModInfo info{};
@@ -1168,6 +1209,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     }
     g_ini_path = std::wstring(api->azimuth_dir) + L"/communitygarage/server.ini";
     add_mods_page_rows(api);
+    if (!azimuth_supported(api)) return 0;
     if (!load_config(api->azimuth_dir)) return 0;
     if (HANDLE t = CreateThread(nullptr, 0, worker, nullptr, 0, nullptr)) CloseHandle(t);
     return 0;

@@ -23,5 +23,9 @@ struct BridgeConfig {
     std::string  name;              // display name (UTF-8), sent URL-encoded as X-CT-Name
 };
 
+// The Azimuth release this azimuth.exe is ("1.0.4"), or NULL when the bridge wasn't written for it. Without the
+// bridge no request reaches the server, so the mod stays off on such a build.
+const char* xhr_bridge_known_build();
+
 // Returns true when the stub's vtable was recognised and all slots are hooked.
 bool xhr_bridge_install(const FH2ModApi* api, FH2Mod* mod, const BridgeConfig& cfg);

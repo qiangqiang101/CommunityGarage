@@ -18,11 +18,11 @@ server. The game's Share, Find, Suggested and download screens work again, as th
 
 ## Requirements
 
-- Forza Horizon 2 for PC, run with **Azimuth** (tested with Azimuth 0.9.10-1.0.3).
+- Forza Horizon 2 for PC, run with **Azimuth** (tested with Azimuth 0.9.10-1.0.4).
 - Windows 10 or 11, 64-bit.
 - An internet connection (to reach the community server).
 - The **FH2 Mod Platform**: it's `DWrite.dll` next to `azimuth.exe`, and the download below already includes it
-  (version 2.7.4). If you use other FH2 mods you have it already; it's one shared file.
+  (version 2.8.0). If you use other FH2 mods you have it already; it's one shared file.
 - Works alongside other platform mods (it has been used with Achievements, FnFNitro, ShowFPS, WheresMyBuddy and WreckingBall)
   and with Extra Options.
 
@@ -38,7 +38,7 @@ server. The game's Share, Find, Suggested and download screens work again, as th
    fh2-mods\CommunityGarage.dll
    communitygarage\server.ini
    ```
-   If Windows asks to replace `DWrite.dll`, say **yes** unless yours is newer than 2.7.4. Don't delete anything
+   If Windows asks to replace `DWrite.dll`, say **yes** unless yours is newer than 2.8.0. Don't delete anything
    else that is already in `fh2-mods`.
 4. Start the game. The first time, the mod makes your account key (see below). Nothing else to set up.
 

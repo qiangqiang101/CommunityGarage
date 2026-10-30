@@ -1,5 +1,7 @@
 #include "xhr_bridge.hpp"
 
+#include "notify.hpp"
+
 #include <windows.h>
 #include <winhttp.h>
 #include <objidl.h>
@@ -36,6 +38,8 @@ constexpr AzimuthBuild kBuilds[] = {
                                      0x6705C0, 0x6705D0, 0x6705E0, 0x6705F0, 0x670620, 0x670660}},
     {0x6AE0F17A, "1.0.3", 0x8493F8, {0x67C410, 0x67C400, 0x67C3C0, 0x67C030, 0x67C0F0, 0x67C210, 0x67C280,
                                      0x67C2A0, 0x67C2B0, 0x67C2C0, 0x67C2D0, 0x67C300, 0x67C340}},
+    {0x6AE393EB, "1.0.4", 0x7159D8, {0x54BD90, 0x54BD80, 0x54BD40, 0x54B9B0, 0x54BA70, 0x54BB90, 0x54BC00,
+                                     0x54BC20, 0x54BC30, 0x54BC40, 0x54BC50, 0x54BC80, 0x54BCC0}},
 };
 enum Slot { kQueryInterface, kAddRef, kRelease, kOpen, kSend, kAbort, kSetCookie, kSetCustomResponseStream,
             kSetProperty, kSetRequestHeader, kGetAllResponseHeaders, kGetCookie, kGetResponseHeader };
@@ -425,6 +429,65 @@ void refuse_foreign_tune(Req& r) {
     r.respBody.insert(r.respBody.end(), kText, kText + sizeof kText - 1);
 }
 
+// Tell the player why a request failed: the server's own text from an error reply (kind 2), or why the server couldn't
+// be reached. It goes into the Storefront's error popup in place of its generic message, or on the HUD when there's
+// no popup. Errors that are expected stay in the log.
+//
+// A livery that downloaded fine can still be refused by the game: it won't load one bigger than about 337 KB, and says
+// only "Design Unavailable" (popup code 0x80500001). The largest reply seen to load was 345,013 bytes, the smallest
+// seen to fail 389,086; one above the first gets that reason ready, without a HUD notification, as it may still load.
+constexpr size_t kLargestLiveryLoaded = 345013;
+// The server's error code for an upload over that size (validate.js TOO_LARGE).
+constexpr uint32_t kTooLarge = 413;
+
+void tell_player(const std::string& xmethod, const Req& r, HRESULT hr) {
+    static const char* const kQuiet[] = {"GetDrivatarsForCache", "GetDrivatarInformationForRace"};   // "drivatars unavailable" is normal
+    if (xmethod.empty()) return;
+    for (const char* q : kQuiet) if (xmethod == q) return;
+    // The server answers every Clubs request with 503, as an offline game gets, so the Clubs tab stays locked.
+    for (auto& h : r.headers)
+        if (iequals(h.first, L"X-ClassName") && h.second.rfind(L"Forza.WebServices.CarClub", 0) == 0) return;
+    char text[400];
+    if (SUCCEEDED(hr) && r.status == 200 && xmethod == "RetrieveVersionedLiveryById" && r.respBody.size() > kLargestLiveryLoaded &&
+        be32(r.respBody.data()) == 0) {
+        std::snprintf(text, sizeof text, "This livery is too big for the game to load (%zu KB). Liveries over about 337 KB can't be downloaded.",
+                      r.respBody.size() / 1024);
+        notify_request_failed(0x80500001, text, false);
+        return;
+    }
+    uint32_t seen = 0;   // the code the game will see, when known
+    if (FAILED(hr)) {
+        seen = (uint32_t)hr;
+        if (hr == HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED)) return;
+        switch (HRESULT_CODE(hr)) {
+        case ERROR_WINHTTP_TIMEOUT: std::snprintf(text, sizeof text, "The server took too long to answer. Try again in a moment."); break;
+        case ERROR_WINHTTP_SECURE_FAILURE: std::snprintf(text, sizeof text, "Couldn't make a secure connection to the server."); break;
+        case ERROR_WINHTTP_NAME_NOT_RESOLVED:
+        case ERROR_WINHTTP_CANNOT_CONNECT:
+        case ERROR_WINHTTP_CONNECTION_ERROR: std::snprintf(text, sizeof text, "Can't reach the server. Check your internet connection."); break;
+        default: std::snprintf(text, sizeof text, "Can't reach the server (error 0x%08lX).", (unsigned long)hr); break;
+        }
+    } else if (r.status >= 400) {
+        std::snprintf(text, sizeof text, "The server had a problem (HTTP %lu). Try again later.", (unsigned long)r.status);
+    } else if (r.respBody.size() >= 12 && be32(r.respBody.data()) == 2) {
+        size_t len = std::min<size_t>(be32(r.respBody.data() + 8), r.respBody.size() - 12);
+        std::string said(reinterpret_cast<const char*>(r.respBody.data()) + 12, len);
+        uint32_t code = be32(r.respBody.data() + 4);
+        // The game reports it as 0x8051xxxx, but the popup it ends up in may carry another code, so any Storefront
+        // error popup right after it gets this text.
+        seen = 0;
+        if (said.empty()) std::snprintf(text, sizeof text, "The server turned this down (code %lu).", (unsigned long)code);
+        else std::snprintf(text, sizeof text, "%s", said.c_str());
+        // 413: the livery is too big to share. LiveryLayerPatch raises the game's layer limits well past that.
+        if (code == kTooLarge && xmethod == "UpdateLivery" && g_api->mod_version("LiveryLayerPatch"))
+            std::snprintf(text + std::strlen(text), sizeof text - std::strlen(text),
+                          " LiveryLayerPatch lets you add more layers than can be shared.");
+    } else {
+        return;
+    }
+    notify_request_failed(seen, text);
+}
+
 DWORD WINAPI worker(LPVOID param) {
     std::unique_ptr<Job> job(static_cast<Job*>(param));
     Req& r = *job->req;
@@ -465,6 +528,7 @@ DWORD WINAPI worker(LPVOID param) {
                                                                : (probe ? HRESULT_FROM_WIN32(ERROR_NETWORK_UNREACHABLE) : (r.synthetic ? do_synthetic(r, job->body) : do_http(r, job->body)));
 
     if (SUCCEEDED(hr) && xmethod == "RetrieveVersionedTuneById") refuse_foreign_tune(r);
+    if (!probe && !r.synthetic) tell_player(xmethod, r, hr);
     IXMLHTTPRequest2Callback* cb = r.cb;
     if (SUCCEEDED(hr)) {
         // The game reads Content-Length from the request object in OnHeadersAvailable
@@ -657,6 +721,21 @@ HRESULT STDMETHODCALLTYPE d_GetResponseHeader(void* self, LPCWSTR name, LPWSTR* 
 
 } // namespace
 
+namespace {
+const AzimuthBuild* known_build() {
+    auto* base = reinterpret_cast<uint8_t*>(GetModuleHandleW(nullptr));
+    auto* nt   = reinterpret_cast<IMAGE_NT_HEADERS*>(base + reinterpret_cast<IMAGE_DOS_HEADER*>(base)->e_lfanew);
+    for (const AzimuthBuild& b : kBuilds)
+        if (nt->FileHeader.TimeDateStamp == b.timestamp) return &b;
+    return nullptr;
+}
+} // namespace
+
+const char* xhr_bridge_known_build() {
+    const AzimuthBuild* b = known_build();
+    return b ? b->name : nullptr;
+}
+
 bool xhr_bridge_install(const FH2ModApi* api, FH2Mod* mod, const BridgeConfig& cfg) {
     g_api = api;
     g_mod = mod;
@@ -667,14 +746,9 @@ bool xhr_bridge_install(const FH2ModApi* api, FH2Mod* mod, const BridgeConfig& c
     }
 
     auto* base = reinterpret_cast<uint8_t*>(GetModuleHandleW(nullptr));
-    auto* dos  = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
-    auto* nt   = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-    const AzimuthBuild* build = nullptr;
-    for (const AzimuthBuild& b : kBuilds)
-        if (nt->FileHeader.TimeDateStamp == b.timestamp) build = &b;
+    const AzimuthBuild* build = known_build();
     if (!build) {
-        logf("HTTP bridge: azimuth.exe build 0x%08lx isn't one this was written for (0.9.10, 1.0.1, 1.0.2, 1.0.3); not hooking",
-             (unsigned long)nt->FileHeader.TimeDateStamp);
+        logf("HTTP bridge: this azimuth.exe isn't one it was written for; not hooking");
         return false;
     }
     auto** vt = reinterpret_cast<void**>(base + build->vtable);
