@@ -56,8 +56,17 @@ Share fails with "error communicating with server" unless three Xbox Live depend
 
 Wire layouts come from runtime reflection tables (rows of 12 qwords: kind, name, ..., size@q8, typeinfo@q9, element row@q10;
 struct typeinfo = {rows*, count}). Kinds: 0 u8, 1/2 u16, 3/4/7 u32 (7 float), 5/6 u64, 9 str, 0xA/0x10 date string,
-0xB/0x11 bool, 0xC struct, 0xE array (u32 count), 0x14 blob (u32 count). `mod/src/communitygarage.cpp: dump_types` writes
-`communitygarage/typedump.txt` (BFS from pool addresses); decode with the row layout above.
+0xB/0x11 bool, 0xC struct, 0xE array (u32 count), 0x14 blob (u32 count), 0x12 guid (16 bytes), 0x13 f64. The "typedump" command
+(platform command pipe, while the game runs) writes `communitygarage/typedump.txt` (`dump_types`: BFS from the descriptor slots);
+decode with the row layout above. A method's two slots are the `lea rax,[rip+...]` operands just before its registration call
+(`lea rdx,"<Method>"; lea rcx,"Forza.WebServices.<Service>, Forza.WebServices"; call game+0xEDA580`). The rows themselves are
+static (.rdata); nested struct type info is filled at runtime by `lea rdx,rows; lea rcx,slot; mov r8d,count; jmp game+0xEE4A00`.
+
+Scoreboard (2026-10-30): slots game+0x354D310..0x354D4A0 (DownloadFile, GetBestScore, GetLadderRows, GetRival, GetRows,
+GetRowsAnthem, GetTimeTrials, NotifyRival, SubmitScore, SubmitXpScore, UploadFile). Layouts are written out in the server's
+scoreboard.js. Speed traps are scoreType 5, boards 1-30 (SpeedCameras.str IDS_SpeedTrapNN); speed zones scoreType 6, boards 36-50
+(IDS_SpeedZone01-15). Score = f64 m/s. The game submits only a new personal best. With `[debug] trace=1` the bridge saves every
+Scoreboard request/reply to `communitygarage/captures/`.
 
 Decoded: Storefront Search*/GetMyFileList/GetCuratedContent (FileSummary), GetFileHeavyWeightData and
 GetFeaturedLiveriesForRandomCars (FileData), GetLiveriesForDrivatar, RetrieveVersionedTuneById (CarId, BinaryVersion u16,

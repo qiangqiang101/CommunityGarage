@@ -209,9 +209,12 @@ HRESULT do_http(Req& r, const std::vector<uint8_t>& body) {
     SetLastError(0);
     if (!WinHttpCrackUrl(r.url.c_str(), (DWORD)r.url.size(), 0, &uc)) return http_failed(r, "WinHttpCrackUrl");
 
-    bool secure = g_cfg.scheme == 2 || (g_cfg.scheme == 0 && uc.nPort == 443);
     std::wstring objectName = g_cfg.path_prefix + std::wstring(uc.lpszUrlPath, uc.dwUrlPathLength) + std::wstring(uc.lpszExtraInfo, uc.dwExtraInfoLength);
     std::wstring hostName(uc.lpszHostName, uc.dwHostNameLength);
+    // The game's URLs carry no port (they always arrive as http://<host>/...), so the configured port is used for the
+    // community server; another host keeps the URL's.
+    INTERNET_PORT port = iequals(hostName, g_cfg.host) && g_cfg.port > 0 ? (INTERNET_PORT)g_cfg.port : uc.nPort;
+    bool secure = g_cfg.scheme == 2 || (g_cfg.scheme == 0 && port == 443);
 
     std::wstring ua = L"Xls Client";
     std::wstring hdrs;
@@ -245,7 +248,7 @@ HRESULT do_http(Req& r, const std::vector<uint8_t>& body) {
     WinHttpSetTimeouts(session.h, 5000, 5000, 15000, 30000);
 
     SetLastError(0);
-    Closer conn{WinHttpConnect(session.h, hostName.c_str(), uc.nPort, 0)};
+    Closer conn{WinHttpConnect(session.h, hostName.c_str(), port, 0)};
     if (!conn.h) return http_failed(r, "WinHttpConnect");
 
     SetLastError(0);
@@ -334,11 +337,42 @@ HRESULT do_http(Req& r, const std::vector<uint8_t>& body) {
 
 // Xbox Live's privacy service decides whether the player may share user-created content. There is no Xbox Live
 // to ask, so every check is answered "allowed". The JSON follows XSAPI's PermissionCheckResult deserializer.
+// ---- Drivatar names. The game asks the profile service for every other driver's gamertag by user id; each id gets
+// the next name in the list the first time it's asked for, and keeps it.
+std::mutex                                   g_names_mu;
+std::vector<std::string>                     g_names;
+std::unordered_map<std::string, std::string> g_name_of;   // user id -> name
+
+// Azimuth's local player is always user 2533274790395904 (0x9000000000000, the saves' User_9000000000000): that lookup
+// is the player's own gamertag, so it gets the player's name, never a driver's.
+constexpr const char* kLocalUser = "2533274790395904";
+
+std::string drivatar_name(const std::string& user) {
+    if (user == kLocalUser) return g_cfg.name.empty() ? "Racer" : g_cfg.name;
+    std::lock_guard<std::mutex> lk(g_names_mu);
+    if (g_names.empty()) return "Racer";
+    auto it = g_name_of.find(user);
+    if (it != g_name_of.end()) return it->second;
+    std::string name = g_names[g_name_of.size() % g_names.size()];
+    g_name_of.emplace(user, name);
+    return name;
+}
+
+std::string json_escape(const std::string& s) {
+    std::string out;
+    for (unsigned char c : s) {
+        if (c == '"' || c == '\\') { out += '\\'; out += (char)c; }
+        else if (c < 0x20) { char u[8]; std::snprintf(u, sizeof u, "\\u%04x", c); out += u; }
+        else out += (char)c;
+    }
+    return out;
+}
+
 HRESULT do_synthetic(Req& r, const std::vector<uint8_t>& body) {
     std::string reply;
     if (r.url.find(L"/users/batch/profile/settings") != std::wstring::npos) {
         // Profile service (gamertags for other players / drivatars). Echo every requested user with each requested
-        // setting set to a generic name, so name plates have text instead of boxes.
+        // name setting set to the driver's name (drivatar_name), so name plates have text instead of boxes.
         std::string in(body.begin(), body.end());
         if (g_cfg.debug) logf("profile settings request body: %.300s", in.c_str());
         auto strings_after = [&](const char* key) {
@@ -361,9 +395,10 @@ HRESULT do_synthetic(Req& r, const std::vector<uint8_t>& body) {
         reply = "{" + std::string(1, '"') + "profileUsers" + std::string(1, '"') + ":[";
         for (size_t u = 0; u < users.size(); u++) {
             reply += std::string(u ? "," : "") + "{\"id\":\"" + users[u] + "\",\"hostId\":\"" + users[u] + "\",\"settings\":[";
+            const std::string who = json_escape(drivatar_name(users[u]));
             for (size_t s = 0; s < settings.size(); s++) {
                 bool name = settings[s].find("amertag") != std::string::npos || settings[s].find("Name") != std::string::npos;
-                reply += std::string(s ? "," : "") + "{\"id\":\"" + settings[s] + "\",\"value\":\"" + (name ? "Racer" : "") + "\"}";
+                reply += std::string(s ? "," : "") + "{\"id\":\"" + settings[s] + "\",\"value\":\"" + (name ? who : "") + "\"}";
             }
             reply += "],\"isSponsoredUser\":false}";
         }
@@ -488,6 +523,33 @@ void tell_player(const std::string& xmethod, const Req& r, HRESULT hr) {
     notify_request_failed(seen, text);
 }
 
+// With the detailed log on, every Scoreboard call's request and reply bodies go to communitygarage/captures/, to work
+// out the leaderboard layouts: <n>-<method>-req.bin and -reply.bin.
+void save_scoreboard_capture(const Req& r, const std::string& xmethod, const std::vector<uint8_t>& body) {
+    bool scoreboard = false;
+    for (auto& h : r.headers)
+        if (iequals(h.first, L"X-ClassName") && h.second.rfind(L"Forza.WebServices.Scoreboard", 0) == 0) scoreboard = true;
+    if (!scoreboard || xmethod.empty()) return;
+    static volatile LONG n = 0;
+    LONG k = InterlockedIncrement(&n);
+    if (k > 500) return;
+    wchar_t dir[MAX_PATH];
+    if (GetModuleFileNameW(nullptr, dir, MAX_PATH) == 0) return;
+    std::wstring folder = dir;
+    folder = folder.substr(0, folder.find_last_of(L"\\/")) + L"\\communitygarage\\captures";
+    CreateDirectoryW(folder.c_str(), nullptr);
+    std::wstring stem = folder + L"\\" + std::to_wstring(GetTickCount()) + L"-" + std::to_wstring(k) + L"-" +
+                        std::wstring(xmethod.begin(), xmethod.end());
+    for (int part = 0; part < 2; part++) {
+        const std::vector<uint8_t>& data = part ? r.respBody : body;
+        if (FILE* f = _wfopen((stem + (part ? L"-reply.bin" : L"-req.bin")).c_str(), L"wb")) {
+            if (!data.empty()) std::fwrite(data.data(), 1, data.size(), f);
+            std::fclose(f);
+        }
+    }
+    logf("scoreboard capture #%ld: %s (%zu request bytes, %zu reply bytes)", k, xmethod.c_str(), body.size(), r.respBody.size());
+}
+
 DWORD WINAPI worker(LPVOID param) {
     std::unique_ptr<Job> job(static_cast<Job*>(param));
     Req& r = *job->req;
@@ -536,6 +598,7 @@ DWORD WINAPI worker(LPVOID param) {
         // signals completion from OnResponseReceived.
         if (g_cfg.debug || r.status >= 400) logf("%s %s -> %lu, %zu bytes, %lu ms", narrow(r.method).c_str(), narrow(r.url).c_str(), (unsigned long)r.status,
              r.respBody.size(), (unsigned long)(GetTickCount() - t0));
+        if (g_cfg.debug) save_scoreboard_capture(r, xmethod, job->body);
         if (cb) {
             MemStream* ms = nullptr;
             if (r.custom) {
@@ -720,6 +783,37 @@ HRESULT STDMETHODCALLTYPE d_GetResponseHeader(void* self, LPCWSTR name, LPWSTR* 
 }
 
 } // namespace
+
+void xhr_bridge_set_drivatar_names(std::vector<std::string> names) {
+    std::lock_guard<std::mutex> lk(g_names_mu);
+    g_names = std::move(names);
+    g_name_of.clear();
+}
+
+bool xhr_bridge_fetch_drivatar_names(std::vector<std::string>* out) {
+    out->clear();
+    if (!g_api) return false;
+    const BridgeConfig& cfg = g_cfg;   // set by xhr_bridge_install, read-only from then on (do_http uses it too)
+    bool secure = cfg.scheme == 2 || (cfg.scheme == 0 && cfg.port == 443);
+    Req r;
+    r.method = L"GET";
+    r.url    = std::wstring(secure ? L"https://" : L"http://") + cfg.host + L":" + std::to_wstring(cfg.port) + L"/drivatar-names";
+    HRESULT hr = do_http(r, {});
+    if (FAILED(hr) || r.status != 200) {
+        logf("drivatar names: the server didn't send them (hr 0x%08lx, HTTP %lu)", (unsigned long)hr, (unsigned long)r.status);
+        return false;
+    }
+    std::string text(r.respBody.begin(), r.respBody.end());
+    size_t at = 0;
+    while (at < text.size() && out->size() < 26) {
+        size_t nl = text.find('\n', at);
+        std::string line = text.substr(at, nl == std::string::npos ? std::string::npos : nl - at);
+        at = nl == std::string::npos ? text.size() : nl + 1;
+        while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) line.pop_back();
+        if (!line.empty()) out->push_back(line);
+    }
+    return true;
+}
 
 namespace {
 const AzimuthBuild* known_build() {

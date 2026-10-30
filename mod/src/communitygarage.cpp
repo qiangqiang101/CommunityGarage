@@ -14,6 +14,8 @@
 #include <windows.h>
 #include <bcrypt.h>
 #include <vector>
+#include <algorithm>
+#include <cctype>
 #include <unordered_set>
 
 #include <cstdarg>
@@ -50,7 +52,9 @@ char g_port[16];
 BridgeConfig g_bridge;
 volatile LONG g_share_tick = 0;     // tick count when the last share attempt started (0 = none)
 bool g_fake_token = true;       // experiment: Azimuth token requests complete successfully (see on_az_token_op)
-bool g_debug      = false;      // [debug] trace=1: diagnostic hooks and verbose logging (off for normal play)
+bool g_debug      = false;
+bool g_server_names = true;     // [drivatars] names=server: Drivatar names from the community server (see load_drivatar_names)
+bool drivatar_names_from_server(const std::wstring& ini);      // [debug] trace=1: diagnostic hooks and verbose logging (off for normal play)
 bool g_econ_scan  = false;      // experiment: scan memory for the economy object (see scan_economy)
 bool g_econ_probe = false;      // experiment: [experiments] economy_probe=1, also runs the scan
 bool g_token_text = false;      // experiment: non-empty Xbox token (see on_token_strings)
@@ -105,6 +109,7 @@ bool load_config(const wchar_t* dir) {
         g_bridge.path_prefix = p;
     }
     g_bridge.host         = host;
+    g_bridge.port         = _wtoi(port) > 0 ? _wtoi(port) : 443;
     g_bridge.scheme       = !_wcsicmp(scheme, L"https") ? 2 : !_wcsicmp(scheme, L"http") ? 1 : 0;
     g_bridge.insecure_tls = GetPrivateProfileIntW(L"server", L"insecure_tls", 0, ini.c_str()) != 0;
     // Account: a random key made on first run identifies this install to the server; the display name is the
@@ -160,7 +165,158 @@ bool load_config(const wchar_t* dir) {
     g_fake_token          = GetPrivateProfileIntW(L"experiments", L"fake_token", 1, ini.c_str()) != 0;
     g_token_text          = GetPrivateProfileIntW(L"experiments", L"token_text", 1, ini.c_str()) != 0;
     g_skip_streams        = static_cast<int>(GetPrivateProfileIntW(L"azimuth", L"skip_livery_texture_streams", static_cast<UINT>(-1), ini.c_str()));
+    g_server_names        = drivatar_names_from_server(ini);
     return true;
+}
+
+// ---- Drivatar names: [drivatars] names=server (the default) takes the community's players' names from the server at
+// startup; names=off (or the older "own") keeps the game's own AI driver names, as does a server that can't be reached
+// (the few drivers the game looks up by Xbox id are then "Racer").
+bool drivatar_names_from_server(const std::wstring& ini) {
+    wchar_t v[16] = {};
+    GetPrivateProfileStringW(L"drivatars", L"names", L"server", v, 16, ini.c_str());
+    return _wcsicmp(v, L"off") != 0 && _wcsicmp(v, L"own") != 0;
+}
+
+// ---- Putting the names on the AI drivers, in memory only: no file is written.
+// The Drivatars are the 125 records of media\drivatarglobalcache\DefaultCache.bin (u32 version 4, u32 count, records of
+// 0x2658 bytes, each starting with the driver's gamertag as UTF-16 in a 32-byte field). The loader (game+0xA2D0E0) reads
+// the records straight into its list at this+0x4D78 {begin, end}; at game+0xA2D2C2 the read is done, and the 25 gamertags
+// (five records each, in the file in IDS_Name_1..25 order) are renamed there. Car meets and some road-trip traffic are
+// named from AIPlayers.str (IDS_Name_1..25, and IDS_Name_313 "HRZN Ben"); every string lookup goes through
+// game+0x123D780 (manager, table index, key) -> text, and the lookups of those 26 keys in that table get the same names.
+// That table's index is set at runtime, so it's recognised by its text: the game's own name for the key.
+struct AiName { uint16_t key; const wchar_t* name; };
+constexpr AiName kAiNames[] = {   // IDS_Name_1..25, then IDS_Name_313
+    {0x290B, L"Nocomply76"}, {0x288B, L"Super Final"}, {0x280B, L"FlawlessC0wboy"}, {0x2B8B, L"Lord of Ward86"},
+    {0x2B0B, L"Richiiieee"}, {0x2A8B, L"AcidCatFish"}, {0x2A0B, L"Van182"}, {0x2D8B, L"Rofelloswow"}, {0x2D0B, L"adetheterrible"},
+    {0x9D94, L"D1LL0W88"}, {0x9D14, L"geekmonkey13"}, {0x9C94, L"jay8ee"}, {0x9C14, L"Atomique Banana"}, {0x9F94, L"Novatide"},
+    {0x9F14, L"ton3s"}, {0x9E94, L"ajmiles"}, {0x9E14, L"JDLOKI"}, {0x9994, L"Womgoose"}, {0x9914, L"Detune"}, {0x5D94, L"TPeza"},
+    {0x5D14, L"czphillips"}, {0x5C94, L"T4tty T3ddy"}, {0x5C14, L"Tolomandy"}, {0x5F94, L"TheMonsterMash"}, {0x5F14, L"TheCraigFace"},
+    {0x938E, L"HRZN Ben"}};
+constexpr size_t kAiCount = sizeof kAiNames / sizeof kAiNames[0];
+constexpr const char* kDrivatarCache = "drivatarglobalcache/DefaultCache.bin";
+constexpr size_t      kCacheRecord = 0x2658, kCacheName = 32;
+
+std::wstring g_ai_text[kAiCount];    // the community name for each slot; set once before the hooks are made
+bool         g_ai_names_on = false;
+volatile signed char g_ai_table[1024];   // per string table index: 0 not yet seen, 1 AIPlayers.str, -1 another table
+
+int ai_slot(uint32_t key) {
+    switch (key & 0xFF) { case 0x0B: case 0x8B: case 0x14: case 0x94: case 0x8E: break; default: return -1; }   // cheap reject
+    for (size_t i = 0; i < kAiCount; i++) if (kAiNames[i].key == (key & 0xFFFF)) return (int)i;
+    return -1;
+}
+
+using Fn_LocLookup = const wchar_t* (*)(void* manager, uint32_t table, uint32_t key);
+Fn_LocLookup g_loc_lookup_orig = nullptr;
+const wchar_t* loc_lookup_detour(void* manager, uint32_t table, uint32_t key) {
+    int slot = ai_slot(key);
+    uint32_t t = table & 0xFFFF;
+    if (slot < 0 || t >= sizeof g_ai_table) return g_loc_lookup_orig(manager, table, key);
+    signed char known = g_ai_table[t];
+    if (known < 0) return g_loc_lookup_orig(manager, table, key);
+    if (known == 0) {
+        const wchar_t* text = g_loc_lookup_orig(manager, table, key);
+        bool ai = text && !std::wcscmp(text, kAiNames[slot].name);
+        g_ai_table[t] = ai ? 1 : -1;
+        if (ai) logf("drivatar names: string table %u is AIPlayers.str", t);
+        if (!ai) return text;
+    }
+    return g_ai_text[slot].c_str();
+}
+
+bool safe_read(const void* p, void* out, size_t n);
+
+// game+0xA2D2C2, in the Drivatar cache loader just after the records were read: r14 = &list {begin, end}.
+void on_drivatars_loaded(FH2Context* ctx, void*) {
+    uint8_t** list = reinterpret_cast<uint8_t**>(ctx->r14);
+    uint8_t *begin = nullptr, *end = nullptr;
+    if (!safe_read(list, &begin, sizeof begin) || !safe_read(list + 1, &end, sizeof end) || !begin || end <= begin) return;
+    size_t bytes = static_cast<size_t>(end - begin);
+    if (bytes % kCacheRecord || bytes / kCacheRecord > 1000) { logf("drivatar names: the Drivatar list isn't as expected (%zu bytes)", bytes); return; }
+    size_t count = bytes / kCacheRecord;
+    std::vector<std::wstring> seen;   // the gamertags in the order they first appear: slot 0..24
+    for (size_t i = 0; i < count; i++) {
+        wchar_t* field = reinterpret_cast<wchar_t*>(begin + i * kCacheRecord);
+        std::wstring name(field, wcsnlen(field, kCacheName / 2));
+        auto it = std::find(seen.begin(), seen.end(), name);
+        size_t slot = static_cast<size_t>(it - seen.begin());
+        if (it == seen.end()) seen.push_back(name);
+        const std::wstring& to = g_ai_text[slot < kAiCount - 1 ? slot : slot % (kAiCount - 1)];
+        std::memset(field, 0, kCacheName);
+        std::wmemcpy(field, to.c_str(), std::min<size_t>(to.size(), kCacheName / 2 - 1));
+    }
+    logf("drivatar names: %zu Drivatars (%zu records) renamed in memory", seen.size(), count);
+}
+
+// The names for the AI drivers (repeated when there are fewer than 26), or none: the game keeps its own. Also removes
+// what an earlier version wrote to files (a DefaultCache.bin override and AIPlayers.str edits).
+void set_ai_names(const std::vector<std::string>& names) {
+    g_api->clear_file(g_mod, kDrivatarCache);
+    g_api->clear_strings(g_mod, "AIPlayers.str");
+    g_api->apply_strings(g_mod);
+    if (names.empty()) return;
+    for (size_t i = 0; i < kAiCount; i++) {
+        const std::string& n = names[i % names.size()];
+        int len = MultiByteToWideChar(CP_UTF8, 0, n.c_str(), (int)n.size(), nullptr, 0);
+        g_ai_text[i].assign(len, L' ');
+        MultiByteToWideChar(CP_UTF8, 0, n.c_str(), (int)n.size(), g_ai_text[i].data(), len);
+        if (g_ai_text[i].size() > kCacheName / 2 - 1) g_ai_text[i].resize(kCacheName / 2 - 1);
+    }
+    g_ai_names_on = true;
+}
+
+// ---- Rivals. The game only opens Rivals when RivalsModule (game+0x34D6348) has its flag at +0xF0 set: States::
+// IsRivalsAccessible (game+0x8A4200) and some 20 other places read it, and nothing in an offline game ever sets it, so
+// Rivals says "cannot connect to Xbox Live". With the community server answering the Rivals calls (and its Logon reply
+// enabling the features 0x56-0x5B), the mod sets it, and puts it back if the game clears it.
+DWORD WINAPI rivals_unlock_thread(LPVOID param) {
+    const uintptr_t base = reinterpret_cast<uintptr_t>(param);   // the game's base
+    bool logged = false;
+    for (;;) {
+        uint8_t* module = nullptr;
+        uint8_t flag = 1;
+        if (safe_read(reinterpret_cast<void*>(base + 0x34D6348), &module, sizeof module) && module &&
+            safe_read(module + 0xF0, &flag, 1) && flag == 0) {
+            *reinterpret_cast<volatile uint8_t*>(module + 0xF0) = 1;
+            if (!logged) { logf("Rivals: switched on (RivalsModule+0xF0)"); logged = true; }
+        }
+        Sleep(1000);
+    }
+}
+
+// The two hooks, made and switched on the moment the game's code is ready, before anything else the mod sets up: the
+// game reads the Drivatar list within its first seconds (only when there are names to put on).
+void install_ai_name_hooks(uintptr_t base) {
+    if (!g_ai_names_on) return;
+    FH2Hook* loaded = g_api->hook_instruction(g_mod, "Drivatar list loaded", reinterpret_cast<void*>(base + (0x140A2D2C2 - kImageBase)),
+                                              on_drivatars_loaded, nullptr);
+    FH2Hook* lookup = g_api->hook_function(g_mod, "string lookup (AI driver names)", reinterpret_cast<void*>(base + (0x14123D780 - kImageBase)),
+                                           reinterpret_cast<void*>(&loc_lookup_detour), reinterpret_cast<void**>(&g_loc_lookup_orig));
+    if (loaded) g_api->enable_hooks(g_mod, loaded);
+    if (lookup) g_api->enable_hooks(g_mod, lookup);
+}
+
+void load_drivatar_names() {
+    std::vector<std::string> names;
+    if (g_server_names && xhr_bridge_fetch_drivatar_names(&names)) {
+        // The server leaves out the player's own name already; this also catches an older server, or a name that was
+        // changed in account.ini since. Compared without a "#N" suffix and without regard to case.
+        auto base = [](std::string s) {
+            size_t hash = s.rfind('#');
+            if (hash != std::string::npos && hash + 1 < s.size() && s.find_first_not_of("0123456789", hash + 1) == std::string::npos) s.erase(hash);
+            for (char& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            return s;
+        };
+        const std::string self = base(g_bridge.name);
+        names.erase(std::remove_if(names.begin(), names.end(), [&](const std::string& n) { return !self.empty() && base(n) == self; }),
+                    names.end());
+    }
+    if (!names.empty()) logf("drivatar names: %zu from the server", names.size());
+    else logf("drivatar names: %s", g_server_names ? "none from the server; the game's own names" : "off; the game's own names");
+    set_ai_names(names);
+    xhr_bridge_set_drivatar_names(std::move(names));
 }
 
 // ---- Azimuth (0.9.10 through 1.0.3) stops ("CreatePlacementTexture2D requires GPU-write/CPU-map/unknown placement semantics") when
@@ -838,20 +994,23 @@ void install_traces(uintptr_t base, std::index_sequence<I...>) {
 }
 
 // ---- Reflection dump: the request/reply layouts live in runtime-built type objects. Walk the pointers from each
-// storefront method's two descriptor objects and write the raw memory to communitygarage/typedump.txt for
-// offline decoding.
-void dump_types(uintptr_t base) {
-    static std::vector<uint64_t> roots;
+// method's two descriptor objects and write the raw memory to communitygarage/typedump.txt for offline decoding.
+// The Scoreboard service's descriptors come first (game+0x354D310..0x354D4A0: DownloadFile, GetBestScore, GetLadderRows,
+// GetRival, GetRows, GetRowsAnthem, GetTimeTrials, NotifyRival, SubmitScore, SubmitXpScore, UploadFile), then the
+// Storefront ones decoded earlier.
+size_t dump_types(uintptr_t base) {
+    std::vector<uint64_t> roots;
+    for (uint64_t a = 0x14354d300; a <= 0x14354d4b0; a += 0x10) roots.push_back(a);
     for (uint64_t a = 0x14354cc80; a <= 0x14354d000; a += 0x10) roots.push_back(a);
     for (uint64_t a = 0x14354e100; a <= 0x14354e200; a += 0x10) roots.push_back(a);
     std::wstring path = std::wstring(g_api->azimuth_dir) + L"/communitygarage/typedump.txt";
     FILE* f = _wfopen(path.c_str(), L"w");
-    if (!f) return;
+    if (!f) return 0;
     std::vector<uint64_t> queue;
     std::unordered_set<uint64_t> seen;
     for (uint64_t r : roots) queue.push_back(base + (r - kImageBase));
     size_t nodes = 0;
-    for (size_t qi = 0; qi < queue.size() && nodes < 12000; qi++) {
+    for (size_t qi = 0; qi < queue.size() && nodes < 40000; qi++) {
         uint64_t a = queue[qi];
         if (!seen.insert(a).second) continue;
         uint8_t buf[0x100];
@@ -872,6 +1031,51 @@ void dump_types(uintptr_t base) {
     }
     std::fclose(f);
     logf("type dump written: %zu nodes", nodes);
+    return nodes;
+}
+
+// "features" from the command pipe: the online-services manager's feature table, as the Logon reply filled it
+// (manager at game+0x367A6D0; table at +0x80: entries of {methodId, tier, isEnabled, access} from +0xA8, count at
+// +0x10A8, valid flag +0x10B1; the manager's state at +0x74, 2 = connected). A feature's status is its `access`; one
+// that isn't listed counts as unavailable (4).
+void on_features_command(void*, const char*, const char*, char* reply, size_t reply_size) {
+    if (!g_base) { std::snprintf(reply, reply_size, "error: the game isn't running yet"); return; }
+    uint8_t* mgr = nullptr;
+    if (!safe_read(reinterpret_cast<void*>(g_base + 0x367A6D0), &mgr, sizeof mgr) || !mgr) { std::snprintf(reply, reply_size, "error: no manager yet"); return; }
+    uint32_t state = 0, count = 0;
+    uint8_t valid = 0, valid2 = 0;
+    safe_read(mgr + 0x74, &state, 4);
+    safe_read(mgr + 0x80 + 0x10A8, &count, 4);
+    safe_read(mgr + 0x80 + 0x10B1, &valid, 1);
+    safe_read(mgr + 0x80 + 0x10B2, &valid2, 1);
+    // The two halves of the Rivals access check (States::IsRivalsAccessible, game+0x8A4200), and what they read.
+    uint8_t* online = nullptr;   // game+0x34D6AF0
+    uint8_t* rivals = nullptr;   // game+0x34D6348 (RivalsModule)
+    uint8_t online11 = 0xFF, rivalsF0 = 0xFF;
+    safe_read(reinterpret_cast<void*>(g_base + 0x34D6AF0), &online, sizeof online);
+    safe_read(reinterpret_cast<void*>(g_base + 0x34D6348), &rivals, sizeof rivals);
+    if (online) safe_read(online + 0x11, &online11, 1);
+    if (rivals) safe_read(rivals + 0xF0, &rivalsF0, 1);
+    int a = -1, b = -1, user = -1;
+    if (online) {
+        a    = reinterpret_cast<bool (*)(void*, bool)>(g_base + 0xA41C90)(online, false);
+        user = reinterpret_cast<bool (*)(void*)>(g_base + 0xA42090)(online);
+    }
+    if (rivals) b = reinterpret_cast<bool (*)()>(g_base + 0x666F40)();
+    int len = std::snprintf(reply, reply_size, "rivals access: A41C90=%d 666F40=%d (online+user A42090=%d, online+0x11=%u, rivals+0xF0=%u); "
+                            "manager state %u, table valid %u/%u, %u entries:", a, b, user, online11, rivalsF0, state, valid, valid2, count);
+    for (uint32_t i = 0; i < count && i < 256 && len < (int)reply_size - 40; i++) {
+        uint32_t e[4] = {};
+        if (!safe_read(mgr + 0x80 + 0xA8 + i * 16, e, sizeof e)) break;
+        len += std::snprintf(reply + len, reply_size - len, " %#x(tier %u, enabled %u, access %u)", e[0], e[1], e[2] & 0xFF, e[3]);
+    }
+}
+
+// "typedump" from fh2mod.exe or the command pipe, while the game runs (the type objects are built at runtime).
+void on_typedump_command(void*, const char*, const char*, char* reply, size_t reply_size) {
+    if (!g_base) { std::snprintf(reply, reply_size, "error: the game isn't running yet"); return; }
+    size_t n = dump_types(g_base);
+    std::snprintf(reply, reply_size, n ? "wrote communitygarage\\typedump.txt (%zu nodes)" : "error: couldn't write communitygarage\\typedump.txt", n);
 }
 
 // ---- The game's economy values. They live in one object, a property every 0x20 bytes from +0x208 (u32 each). Hook the
@@ -979,11 +1183,14 @@ DWORD WINAPI worker(LPVOID) {
     // Azimuth fails every game HTTP request as "offline"; put real HTTP behind the
     // requests to our host before the game makes its first one.
     xhr_bridge_install(g_api, g_mod, g_bridge);
+    load_drivatar_names();
     // wait_for_code, not wait_for_game: Extra Options has to patch first.
     void* code = g_api->wait_for_code(0xFFFFFFFFu);
     if (!code) return 0;
     auto base = reinterpret_cast<uintptr_t>(code);
     g_base    = base;
+    install_ai_name_hooks(base);
+    if (HANDLE t = CreateThread(nullptr, 0, rivals_unlock_thread, reinterpret_cast<void*>(base), 0, nullptr)) CloseHandle(t);
     for (const Entry& e : kEntries) {
         std::string what = std::string(e.name) + " host";
         bool ok = redirect(base, e.host_slot, what.c_str(), kHostExpect, g_host);
@@ -1078,7 +1285,11 @@ DWORD WINAPI worker(LPVOID) {
         install_traces(base, std::make_index_sequence<sizeof(g_traces) / sizeof(g_traces[0])>{});
     }
     g_api->enable_hooks(g_mod, nullptr);
-    // dump_types(base);   // enable to write communitygarage/typedump.txt (see docs/re-notes.md)
+    if (g_api->api_version >= 9)   // writes communitygarage/typedump.txt on request (see docs/re-notes.md)
+        g_api->add_command(g_mod, "typedump", "typedump: write the game's request/reply layouts to communitygarage\\typedump.txt",
+                           on_typedump_command, nullptr);
+    if (g_api->api_version >= 9)
+        g_api->add_command(g_mod, "features", "features: list the online features the Logon reply enabled", on_features_command, nullptr);
     return 0;
 }
 
@@ -1099,6 +1310,11 @@ static void on_setting_changed(void*, const char* key, int value) {
     if (!std::strcmp(key, "CheckUpdates")) { section = L"updates"; name = L"check"; }
     else if (!std::strcmp(key, "DebugLog")) { section = L"debug"; name = L"trace"; }
     else if (!std::strcmp(key, "ServerEconomy")) { section = L"economy"; name = L"use_server_values"; }
+    else if (!std::strcmp(key, "ServerDrivatarNames")) {
+        WritePrivateProfileStringW(L"drivatars", L"names", value ? L"server" : L"off", g_ini_path.c_str());
+        logf("setting %s is now %s (applies the next time the game starts)", key, value ? "server" : "off");
+        return;
+    }
     else return;
     WritePrivateProfileStringW(section, name, value ? L"1" : L"0", g_ini_path.c_str());
     logf("setting %s is now %s (applies the next time the game starts)", key, value ? "on" : "off");
@@ -1127,6 +1343,17 @@ static void add_mods_page_rows(const FH2ModApi* api) {
         e.needs_restart = 1;
         e.on_change     = on_setting_changed;
         api->add_setting(g_mod, &e);
+
+        FH2Setting n{};
+        n.size          = sizeof n;
+        n.key           = "ServerDrivatarNames";
+        n.label         = "Drivatar names from the server";
+        n.description   = "Give the AI drivers the names of Community Garage players, a new random pick each time you start the game. "
+                          "Turn it off to keep the game's own AI driver names.";
+        n.value         = drivatar_names_from_server(g_ini_path);
+        n.needs_restart = 1;
+        n.on_change     = on_setting_changed;
+        api->add_setting(g_mod, &n);
 
         FH2Setting d{};
         d.size          = sizeof d;
