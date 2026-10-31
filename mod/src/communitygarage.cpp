@@ -286,6 +286,17 @@ DWORD WINAPI rivals_unlock_thread(LPVOID param) {
     }
 }
 
+// ---- Game DVR clips. The game records a clip of some moments (beating a Rival, among others: GameTunableSettings'
+// GameDVR\WinRivals*) with Windows.Xbox.Media.Capture.ApplicationClipCapture, which Azimuth doesn't have: asking for it
+// stops the game ("Azimuth stopped: activation Windows.Xbox.Media.Capture.ApplicationClipCapture at game+0x2bd5c3"). An
+// offline game never got there; with Rivals working it does. The task that records a clip (game+0x542B70, `this` the
+// request with the seconds before and after) returns nothing and owns nothing, so it's skipped.
+void (*g_clip_orig)(void*) = nullptr;
+void clip_skip(void*) {
+    static LONG n = 0;
+    if (InterlockedIncrement(&n) <= 3) logf("skipped a Game DVR clip recording (Azimuth has no clip capture)");
+}
+
 // The two hooks, made and switched on the moment the game's code is ready, before anything else the mod sets up: the
 // game reads the Drivatar list within its first seconds (only when there are names to put on).
 void install_ai_name_hooks(uintptr_t base) {
@@ -1191,6 +1202,9 @@ DWORD WINAPI worker(LPVOID) {
     g_base    = base;
     install_ai_name_hooks(base);
     if (HANDLE t = CreateThread(nullptr, 0, rivals_unlock_thread, reinterpret_cast<void*>(base), 0, nullptr)) CloseHandle(t);
+    if (FH2Hook* h = g_api->hook_function(g_mod, "Game DVR clip recording (skipped)", reinterpret_cast<void*>(base + (0x140542B70 - kImageBase)),
+                                          reinterpret_cast<void*>(&clip_skip), reinterpret_cast<void**>(&g_clip_orig)))
+        g_api->enable_hooks(g_mod, h);
     for (const Entry& e : kEntries) {
         std::string what = std::string(e.name) + " host";
         bool ok = redirect(base, e.host_slot, what.c_str(), kHostExpect, g_host);
@@ -1428,6 +1442,9 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     info.description      = "Share and download Forza Horizon 2 liveries, tunes and group vinyls from the game's own menus, through the "
                             "Community Garage server. Needs an internet connection. Your account key, name and what you share go to the "
                             "community server only.";   // [updates] check= in server.ini, on by default
+    // FH2MP points the game's online services at its own servers, as this mod does at ours: the two collide, so stay
+    // out of FH2MP launches (API 9; register_mod returns NULL there). Other launches aren't affected.
+    info.offline_only     = 1;
     g_mod = api->register_mod(&info);
     if (!g_mod) return 1;
     if (api->api_version < 7) {

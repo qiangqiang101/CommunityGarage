@@ -34,6 +34,9 @@ and so do the speed trap and speed zone leaderboards and **Rivals**.
   (version 2.8.0). If you use other FH2 mods you have it already; it's one shared file.
 - Works alongside other platform mods (it has been used with Achievements, FnFNitro, ShowFPS, WheresMyBuddy and WreckingBall)
   and with Extra Options.
+- **Not used with FH2MP.** FH2MP and Community Garage both connect the game's online features to their own servers, so
+  they can't run together. When you start the game from the FH2MP launcher, Community Garage stays off by itself; started
+  any other way, it works as usual. You don't need to uninstall anything to switch between them.
 
 ## Install
 
@@ -130,7 +133,8 @@ Your game saves aren't touched. Designs you downloaded stay in your garage.
 | A share is refused | The server checks every upload for broken files and offensive text; the game's popup says why. Check the title and keywords first. |
 | The title screen says Community Garage doesn't support your Azimuth version | Azimuth was updated after this release. The mod is off and the game plays offline; look for a Community Garage update. |
 | Rivals says "cannot connect to Xbox Live", or "SERVER ERROR" when the race starts | The server you use doesn't have Rivals yet (it needs the current server version), or you're on an older version of the mod. |
-| No `[CommunityGarage]` lines in `platform.log` | The mod didn't load. Check that `DWrite.dll` is next to `azimuth.exe` and that `fh2-mods\CommunityGarage.dll` exists. |
+| Community Garage does nothing when started from FH2MP | That's on purpose: it stays off in FH2MP launches (see Requirements). Start the game without the FH2MP launcher to use it. Don't turn on **Load when playing online** for it on the MODS page; the two would collide. |
+| No `[CommunityGarage]` lines in `platform.log` | The mod didn't load (or the game was started from FH2MP, where it stays off). Check that `DWrite.dll` is next to `azimuth.exe` and that `fh2-mods\CommunityGarage.dll` exists. |
 | Creator name shows with `#2` | Someone already uses your gamertag on the server; a number keeps names unique. |
 | The game crashes | Send the newest files in `fh2-mods\crashes` and `data\logs`. |
 
