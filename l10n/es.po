@@ -1,0 +1,189 @@
+# Spanish (es) for CommunityGarage.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. a switch on the mod's page
+#: mod/src/communitygarage.cpp:1384
+#, max-length:30
+msgctxt "row.CheckUpdates.label"
+msgid "Check for updates"
+msgstr "Buscar actualizaciones"
+
+#: mod/src/communitygarage.cpp:1385
+#, max-length:450
+msgctxt "row.CheckUpdates.description"
+msgid "Let the mod platform look on GitHub, about every six hours, for a newer Community Garage and tell you on the title screen. Nothing is downloaded or installed for you. Nothing else is sent to GitHub."
+msgstr "La plataforma de mods busca en GitHub, cada seis horas más o menos, una versión más nueva de Community Garage y te avisa en la pantalla de título. No se descarga ni se instala nada por ti, y no se envía nada más a GitHub."
+
+#. a switch on the mod's page; the economy values are race payouts
+#: mod/src/communitygarage.cpp:1397
+#, max-length:30
+msgctxt "row.ServerEconomy.label"
+msgid "Use server economy values"
+msgstr "Economía del servidor"
+
+#: mod/src/communitygarage.cpp:1398
+#, max-length:450
+msgctxt "row.ServerEconomy.description"
+msgid "Take race payouts (credits and XP) from the Community Garage server. Turn it off to keep the game's own built-in values; the mod then doesn't ask the server for them."
+msgstr "Los premios de las carreras (créditos y XP) salen del servidor de Community Garage. Si lo desactivas, se usan los valores del juego y el mod no se los pide al servidor."
+
+#. a switch on the mod's page; use the game's own word for Drivatars
+#: mod/src/communitygarage.cpp:1410
+#, max-length:30
+msgctxt "row.ServerDrivatarNames.label"
+msgid "Drivatar names from the server"
+msgstr "Nombres Drivatar del servidor"
+
+#: mod/src/communitygarage.cpp:1411
+#, max-length:450
+msgctxt "row.ServerDrivatarNames.description"
+msgid "Give the AI drivers the names of Community Garage players, a new random pick each time you start the game. Turn it off to keep the game's own AI driver names."
+msgstr "Los pilotos de la IA llevan nombres de jugadores de Community Garage, elegidos al azar cada vez que inicias el juego. Si lo desactivas, conservan los nombres del juego."
+
+#. a switch on the mod's page; keep the file name fh2-mods\platform.log as it is
+#: mod/src/communitygarage.cpp:1423
+#, max-length:30
+msgctxt "row.DebugLog.label"
+msgid "Detailed log (troubleshooting)"
+msgstr "Registro detallado (soporte)"
+
+#: mod/src/communitygarage.cpp:1424
+#, max-length:450
+msgctxt "row.DebugLog.description"
+msgid "Writes much more about what the mod does to fh2-mods\\platform.log. Turn it on only if asked to when reporting a problem; it adds extra hooks to the game and makes the log large."
+msgstr "Escribe mucho más sobre lo que hace el mod en fh2-mods\\platform.log. Actívalo solo si te lo piden al informar de un problema: añade enganches al juego y hace que el registro ocupe mucho."
+
+#. a link on the mod's page that opens the mod's GitHub page
+#: mod/src/communitygarage.cpp:1437
+#, max-length:30
+msgctxt "row.Website.label"
+msgid "Community Garage on GitHub"
+msgstr "Community Garage en GitHub"
+
+#: mod/src/communitygarage.cpp:1438
+#, max-length:450
+msgctxt "row.Website.description"
+msgid "Releases, what's new, and the player guide."
+msgstr "Versiones, novedades y la guía del jugador."
+
+#. the title screen, three lines of up to 40 characters (\n starts one)
+#: mod/src/communitygarage.cpp:1480
+#, max-length:120
+msgctxt "notice.unsupported"
+msgid ""
+"Community Garage doesn't support this\n"
+"Azimuth version yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "Community Garage aún no es compatible\ncon esta versión de Azimuth, así que\ncompartir está desactivado. Actualiza."
+
+#. as above; {version} is Azimuth's version number, as 1.0.5
+#: mod/src/communitygarage.cpp:1483
+#, max-length:120
+msgctxt "notice.unsupported.version"
+msgid ""
+"Community Garage doesn't support\n"
+"Azimuth {version} yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "Community Garage aún no es compatible\ncon Azimuth {version}, así que compartir\nestá desactivado. Actualiza el mod."
+
+#: mod/src/communitygarage.cpp:1534
+#, max-length:450
+msgctxt "mod.description"
+msgid "Share and download Forza Horizon 2 liveries, tunes and group vinyls from the game's own menus, through the Community Garage server. Needs an internet connection. Your account key, name and what you share go to the community server only."
+msgstr "Comparte y descarga diseños, configuraciones de tuneo y grupos de vinilos de Forza Horizon 2 desde los menús del juego, a través del servidor de Community Garage. Necesita conexión a Internet. Tu clave de cuenta, tu nombre y lo que compartes solo van al servidor de la comunidad."
+
+#. the Storefront's error popup, and a HUD pop-up, after picking a tune
+#: mod/src/xhr_bridge.cpp:463
+#, max-length:45
+msgctxt "popup.foreign_tune"
+msgid "This tune was made for a different car."
+msgstr "Este tuneo se hizo para otro coche."
+
+#. the Storefront's error popup after a download; {size} is the livery's size in KB
+#: mod/src/xhr_bridge.cpp:491
+#, max-length:300
+msgctxt "popup.livery_too_big"
+msgid "This livery is too big for the game to load ({size} KB). Liveries over about 337 KB can't be downloaded."
+msgstr "Este diseño es demasiado grande para que el juego lo cargue ({size} KB). No se pueden descargar diseños de más de unos 337 KB."
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:508
+#, max-length:300
+msgctxt "popup.timeout"
+msgid "The server took too long to answer. Try again in a moment."
+msgstr "El servidor tardó demasiado en responder. Vuelve a intentarlo en un momento."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:510
+#, max-length:45
+msgctxt "popup.timeout.line"
+msgid "The server is slow to answer. Try again."
+msgstr "El servidor tarda en responder. Reinténtalo."
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:514
+#, max-length:300
+msgctxt "popup.secure"
+msgid "Couldn't make a secure connection to the server."
+msgstr "No se pudo crear una conexión segura con el servidor."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:516
+#, max-length:45
+msgctxt "popup.secure.line"
+msgid "No secure connection to the server."
+msgstr "Sin conexión segura con el servidor."
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:522
+#, max-length:300
+msgctxt "popup.unreachable"
+msgid "Can't reach the server. Check your internet connection."
+msgstr "No se puede conectar con el servidor. Comprueba tu conexión a Internet."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:524
+#, max-length:45
+msgctxt "popup.unreachable.line"
+msgid "Can't reach the server. Check your internet."
+msgstr "Servidor inaccesible. Revisa tu Internet."
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is an error number, as 0x80072EE2
+#: mod/src/xhr_bridge.cpp:528
+#, max-length:45
+msgctxt "popup.unreachable.code"
+msgid "Can't reach the server (error {code})."
+msgstr "Servidor inaccesible (error {code})."
+
+#. the Storefront's error popup; {status} is an HTTP status, as 503
+#: mod/src/xhr_bridge.cpp:533
+#, max-length:300
+msgctxt "popup.http"
+msgid "The server had a problem (HTTP {status}). Try again later."
+msgstr "El servidor tuvo un problema (HTTP {status}). Inténtalo más tarde."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:535
+#, max-length:45
+msgctxt "popup.http.line"
+msgid "Server problem (HTTP {status}). Try again later."
+msgstr "Error del servidor (HTTP {status}). Más tarde."
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is the server's error number
+#: mod/src/xhr_bridge.cpp:544
+#, max-length:45
+msgctxt "popup.refused"
+msgid "The server turned this down (code {code})."
+msgstr "El servidor lo rechazó (código {code})."
+
+#. added after the server's reason when a livery is too big to share; LiveryLayerPatch is a mod
+#: mod/src/xhr_bridge.cpp:551
+#, max-length:150
+msgctxt "popup.layer_patch"
+msgid "LiveryLayerPatch lets you add more layers than can be shared."
+msgstr "LiveryLayerPatch permite añadir más capas de las que se pueden compartir."

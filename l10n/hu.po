@@ -1,0 +1,189 @@
+# Hungarian (hu) for CommunityGarage.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: hu\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. a switch on the mod's page
+#: mod/src/communitygarage.cpp:1384
+#, max-length:30
+msgctxt "row.CheckUpdates.label"
+msgid "Check for updates"
+msgstr "Frissítések keresése"
+
+#: mod/src/communitygarage.cpp:1385
+#, max-length:450
+msgctxt "row.CheckUpdates.description"
+msgid "Let the mod platform look on GitHub, about every six hours, for a newer Community Garage and tell you on the title screen. Nothing is downloaded or installed for you. Nothing else is sent to GitHub."
+msgstr "A modplatform nagyjából hatóránként megnézi a GitHubon, van-e újabb Community Garage, és a címképernyőn szól róla. Semmit nem tölt le és nem telepít helyetted, és semmi más nem megy a GitHubra."
+
+#. a switch on the mod's page; the economy values are race payouts
+#: mod/src/communitygarage.cpp:1397
+#, max-length:30
+msgctxt "row.ServerEconomy.label"
+msgid "Use server economy values"
+msgstr "Szerver gazdasági értékei"
+
+#: mod/src/communitygarage.cpp:1398
+#, max-length:450
+msgctxt "row.ServerEconomy.description"
+msgid "Take race payouts (credits and XP) from the Community Garage server. Turn it off to keep the game's own built-in values; the mod then doesn't ask the server for them."
+msgstr "A versenyjutalmak (kreditek és XP) a Community Garage szerveréről jönnek. Kikapcsolva a játék saját értékei maradnak, és a mod nem kéri őket a szervertől."
+
+#. a switch on the mod's page; use the game's own word for Drivatars
+#: mod/src/communitygarage.cpp:1410
+#, max-length:30
+msgctxt "row.ServerDrivatarNames.label"
+msgid "Drivatar names from the server"
+msgstr "Drivatar-nevek a szerverről"
+
+#: mod/src/communitygarage.cpp:1411
+#, max-length:450
+msgctxt "row.ServerDrivatarNames.description"
+msgid "Give the AI drivers the names of Community Garage players, a new random pick each time you start the game. Turn it off to keep the game's own AI driver names."
+msgstr "Az MI-versenyzők Community Garage-játékosok nevét kapják, minden játékindításkor újra sorsolva. Kikapcsolva a játék saját neveit viselik."
+
+#. a switch on the mod's page; keep the file name fh2-mods\platform.log as it is
+#: mod/src/communitygarage.cpp:1423
+#, max-length:30
+msgctxt "row.DebugLog.label"
+msgid "Detailed log (troubleshooting)"
+msgstr "Részletes napló (hibakeresés)"
+
+#: mod/src/communitygarage.cpp:1424
+#, max-length:450
+msgctxt "row.DebugLog.description"
+msgid "Writes much more about what the mod does to fh2-mods\\platform.log. Turn it on only if asked to when reporting a problem; it adds extra hooks to the game and makes the log large."
+msgstr "Sokkal többet ír a mod működéséről a fh2-mods\\platform.log fájlba. Csak akkor kapcsold be, ha hibabejelentésnél kérik: további hookokat tesz a játékba, és nagyon megnöveli a naplót."
+
+#. a link on the mod's page that opens the mod's GitHub page
+#: mod/src/communitygarage.cpp:1437
+#, max-length:30
+msgctxt "row.Website.label"
+msgid "Community Garage on GitHub"
+msgstr "Community Garage a GitHubon"
+
+#: mod/src/communitygarage.cpp:1438
+#, max-length:450
+msgctxt "row.Website.description"
+msgid "Releases, what's new, and the player guide."
+msgstr "Kiadások, újdonságok és játékosútmutató."
+
+#. the title screen, three lines of up to 40 characters (\n starts one)
+#: mod/src/communitygarage.cpp:1480
+#, max-length:120
+msgctxt "notice.unsupported"
+msgid ""
+"Community Garage doesn't support this\n"
+"Azimuth version yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "A Community Garage még nem támogatja\nezt az Azimuth-verziót, ezért a\nmegosztás ki van kapcsolva."
+
+#. as above; {version} is Azimuth's version number, as 1.0.5
+#: mod/src/communitygarage.cpp:1483
+#, max-length:120
+msgctxt "notice.unsupported.version"
+msgid ""
+"Community Garage doesn't support\n"
+"Azimuth {version} yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "A Community Garage még nem támogatja\naz Azimuth {version} verziót, ezért a\nmegosztás ki van kapcsolva."
+
+#: mod/src/communitygarage.cpp:1534
+#, max-length:450
+msgctxt "mod.description"
+msgid "Share and download Forza Horizon 2 liveries, tunes and group vinyls from the game's own menus, through the Community Garage server. Needs an internet connection. Your account key, name and what you share go to the community server only."
+msgstr "Forza Horizon 2-dizájnok, tuningbeállítások és matricacsoportok megosztása és letöltése közvetlenül a játék menüiből, a Community Garage szerverén keresztül. Internetkapcsolat szükséges. A fiókkulcsod, a neved és amit megosztasz, csak a közösségi szerverre kerül."
+
+#. the Storefront's error popup, and a HUD pop-up, after picking a tune
+#: mod/src/xhr_bridge.cpp:463
+#, max-length:45
+msgctxt "popup.foreign_tune"
+msgid "This tune was made for a different car."
+msgstr "Ez a hangolás egy másik autóhoz készült."
+
+#. the Storefront's error popup after a download; {size} is the livery's size in KB
+#: mod/src/xhr_bridge.cpp:491
+#, max-length:300
+msgctxt "popup.livery_too_big"
+msgid "This livery is too big for the game to load ({size} KB). Liveries over about 337 KB can't be downloaded."
+msgstr "Ez a dizájn túl nagy ahhoz, hogy a játék betöltse ({size} KB). A kb. 337 KB-nál nagyobb dizájnokat nem lehet letölteni."
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:508
+#, max-length:300
+msgctxt "popup.timeout"
+msgid "The server took too long to answer. Try again in a moment."
+msgstr "A szerver túl sokáig nem válaszolt. Próbáld újra egy kicsit később."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:510
+#, max-length:45
+msgctxt "popup.timeout.line"
+msgid "The server is slow to answer. Try again."
+msgstr "A szerver lassan válaszol. Próbáld újra."
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:514
+#, max-length:300
+msgctxt "popup.secure"
+msgid "Couldn't make a secure connection to the server."
+msgstr "Nem sikerült biztonságos kapcsolatot létrehozni a szerverrel."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:516
+#, max-length:45
+msgctxt "popup.secure.line"
+msgid "No secure connection to the server."
+msgstr "Nincs biztonságos kapcsolat a szerverrel."
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:522
+#, max-length:300
+msgctxt "popup.unreachable"
+msgid "Can't reach the server. Check your internet connection."
+msgstr "A szerver nem érhető el. Ellenőrizd az internetkapcsolatot."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:524
+#, max-length:45
+msgctxt "popup.unreachable.line"
+msgid "Can't reach the server. Check your internet."
+msgstr "A szerver nem érhető el. Nézd meg a netet."
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is an error number, as 0x80072EE2
+#: mod/src/xhr_bridge.cpp:528
+#, max-length:45
+msgctxt "popup.unreachable.code"
+msgid "Can't reach the server (error {code})."
+msgstr "A szerver nem érhető el (hiba: {code})."
+
+#. the Storefront's error popup; {status} is an HTTP status, as 503
+#: mod/src/xhr_bridge.cpp:533
+#, max-length:300
+msgctxt "popup.http"
+msgid "The server had a problem (HTTP {status}). Try again later."
+msgstr "A szerveren hiba történt (HTTP {status}). Próbáld újra később."
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:535
+#, max-length:45
+msgctxt "popup.http.line"
+msgid "Server problem (HTTP {status}). Try again later."
+msgstr "Szerverhiba (HTTP {status}). Próbáld később."
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is the server's error number
+#: mod/src/xhr_bridge.cpp:544
+#, max-length:45
+msgctxt "popup.refused"
+msgid "The server turned this down (code {code})."
+msgstr "A szerver ezt elutasította (kód: {code})."
+
+#. added after the server's reason when a livery is too big to share; LiveryLayerPatch is a mod
+#: mod/src/xhr_bridge.cpp:551
+#, max-length:150
+msgctxt "popup.layer_patch"
+msgid "LiveryLayerPatch lets you add more layers than can be shared."
+msgstr "A LiveryLayerPatch-csel több réteget adhatsz hozzá, mint amennyit meg lehet osztani."

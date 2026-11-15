@@ -1,5 +1,6 @@
 #include "xhr_bridge.hpp"
 
+#include "fh2mod_l10n.h"
 #include "notify.hpp"
 
 #include <windows.h>
@@ -458,10 +459,12 @@ void refuse_foreign_tune(Req& r) {
     uint32_t tune_car = be32(r.respBody.data() + 12);
     if (tune_car == (uint32_t)car) return;
     logf("a downloaded tune is for car %lu, not the current car %ld: refused, so the game leaves the car as it is", (unsigned long)tune_car, car);
-    static const char kText[] = "This tune was made for a different car.";
-    uint8_t head[12] = {0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, (uint8_t)(sizeof kText - 1)};    // error reply: kind 2, code 1, text length
+    // L10N(max=45): the Storefront's error popup, and a HUD pop-up, after picking a tune
+    const std::string text = FH2_TR(g_api, g_mod, "popup.foreign_tune", "This tune was made for a different car.");
+    const uint32_t n = (uint32_t)text.size();
+    uint8_t head[12] = {0, 0, 0, 2, 0, 0, 0, 1, (uint8_t)(n >> 24), (uint8_t)(n >> 16), (uint8_t)(n >> 8), (uint8_t)n};   // error reply: kind 2, code 1, text length
     r.respBody.assign(head, head + sizeof head);
-    r.respBody.insert(r.respBody.end(), kText, kText + sizeof kText - 1);
+    r.respBody.insert(r.respBody.end(), text.begin(), text.end());
 }
 
 // Tell the player why a request failed: the server's own text from an error reply (kind 2), or why the server couldn't
@@ -482,28 +485,54 @@ void tell_player(const std::string& xmethod, const Req& r, HRESULT hr) {
     // The server answers every Clubs request with 503, as an offline game gets, so the Clubs tab stays locked.
     for (auto& h : r.headers)
         if (iequals(h.first, L"X-ClassName") && h.second.rfind(L"Forza.WebServices.CarClub", 0) == 0) return;
-    char text[400];
     if (SUCCEEDED(hr) && r.status == 200 && xmethod == "RetrieveVersionedLiveryById" && r.respBody.size() > kLargestLiveryLoaded &&
         be32(r.respBody.data()) == 0) {
-        std::snprintf(text, sizeof text, "This livery is too big for the game to load (%zu KB). Liveries over about 337 KB can't be downloaded.",
-                      r.respBody.size() / 1024);
-        notify_request_failed(0x80500001, text, false);
+        // L10N(max=300): the Storefront's error popup after a download; {size} is the livery's size in KB
+        std::string text = fh2_fill(FH2_TR(g_api, g_mod, "popup.livery_too_big",
+                                           "This livery is too big for the game to load ({size} KB). Liveries over about 337 KB can't be downloaded."),
+                                    {{"size", fh2_number(g_api, (double)(r.respBody.size() / 1024))}});
+        notify_request_failed(0x80500001, text.c_str(), false);
         return;
     }
-    uint32_t seen = 0;   // the code the game will see, when known
+    std::string text, line;   // the popup's text, and the HUD pop-up's line (45 characters; empty: the text itself)
+    uint32_t seen = 0;        // the code the game will see, when known
+    char hex[16];
+    std::snprintf(hex, sizeof hex, "0x%08lX", (unsigned long)hr);
+    const std::string status = std::to_string(r.status);
     if (FAILED(hr)) {
         seen = (uint32_t)hr;
         if (hr == HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED)) return;
         switch (HRESULT_CODE(hr)) {
-        case ERROR_WINHTTP_TIMEOUT: std::snprintf(text, sizeof text, "The server took too long to answer. Try again in a moment."); break;
-        case ERROR_WINHTTP_SECURE_FAILURE: std::snprintf(text, sizeof text, "Couldn't make a secure connection to the server."); break;
+        case ERROR_WINHTTP_TIMEOUT:
+            // L10N(max=300): the Storefront's error popup
+            text = FH2_TR(g_api, g_mod, "popup.timeout", "The server took too long to answer. Try again in a moment.");
+            // L10N(max=45): the same, on a HUD pop-up under COMMUNITY GARAGE
+            line = FH2_TR(g_api, g_mod, "popup.timeout.line", "The server is slow to answer. Try again.");
+            break;
+        case ERROR_WINHTTP_SECURE_FAILURE:
+            // L10N(max=300): the Storefront's error popup
+            text = FH2_TR(g_api, g_mod, "popup.secure", "Couldn't make a secure connection to the server.");
+            // L10N(max=45): the same, on a HUD pop-up under COMMUNITY GARAGE
+            line = FH2_TR(g_api, g_mod, "popup.secure.line", "No secure connection to the server.");
+            break;
         case ERROR_WINHTTP_NAME_NOT_RESOLVED:
         case ERROR_WINHTTP_CANNOT_CONNECT:
-        case ERROR_WINHTTP_CONNECTION_ERROR: std::snprintf(text, sizeof text, "Can't reach the server. Check your internet connection."); break;
-        default: std::snprintf(text, sizeof text, "Can't reach the server (error 0x%08lX).", (unsigned long)hr); break;
+        case ERROR_WINHTTP_CONNECTION_ERROR:
+            // L10N(max=300): the Storefront's error popup
+            text = FH2_TR(g_api, g_mod, "popup.unreachable", "Can't reach the server. Check your internet connection.");
+            // L10N(max=45): the same, on a HUD pop-up under COMMUNITY GARAGE
+            line = FH2_TR(g_api, g_mod, "popup.unreachable.line", "Can't reach the server. Check your internet.");
+            break;
+        default:
+            // L10N(max=45): the Storefront's error popup, and a HUD pop-up; {code} is an error number, as 0x80072EE2
+            text = fh2_fill(FH2_TR(g_api, g_mod, "popup.unreachable.code", "Can't reach the server (error {code})."), {{"code", hex}});
+            break;
         }
     } else if (r.status >= 400) {
-        std::snprintf(text, sizeof text, "The server had a problem (HTTP %lu). Try again later.", (unsigned long)r.status);
+        // L10N(max=300): the Storefront's error popup; {status} is an HTTP status, as 503
+        text = fh2_fill(FH2_TR(g_api, g_mod, "popup.http", "The server had a problem (HTTP {status}). Try again later."), {{"status", status}});
+        // L10N(max=45): the same, on a HUD pop-up under COMMUNITY GARAGE
+        line = fh2_fill(FH2_TR(g_api, g_mod, "popup.http.line", "Server problem (HTTP {status}). Try again later."), {{"status", status}});
     } else if (r.respBody.size() >= 12 && be32(r.respBody.data()) == 2) {
         size_t len = std::min<size_t>(be32(r.respBody.data() + 8), r.respBody.size() - 12);
         std::string said(reinterpret_cast<const char*>(r.respBody.data()) + 12, len);
@@ -511,16 +540,20 @@ void tell_player(const std::string& xmethod, const Req& r, HRESULT hr) {
         // The game reports it as 0x8051xxxx, but the popup it ends up in may carry another code, so any Storefront
         // error popup right after it gets this text.
         seen = 0;
-        if (said.empty()) std::snprintf(text, sizeof text, "The server turned this down (code %lu).", (unsigned long)code);
-        else std::snprintf(text, sizeof text, "%s", said.c_str());
+        // L10N(max=45): the Storefront's error popup, and a HUD pop-up; {code} is the server's error number
+        if (said.empty()) text = fh2_fill(FH2_TR(g_api, g_mod, "popup.refused", "The server turned this down (code {code})."),
+                                          {{"code", std::to_string(code)}});
+        else text = said;
         // 413: the livery is too big to share. LiveryLayerPatch raises the game's layer limits well past that.
-        if (code == kTooLarge && xmethod == "UpdateLivery" && g_api->mod_version("LiveryLayerPatch"))
-            std::snprintf(text + std::strlen(text), sizeof text - std::strlen(text),
-                          " LiveryLayerPatch lets you add more layers than can be shared.");
+        if (code == kTooLarge && xmethod == "UpdateLivery" && g_api->mod_version("LiveryLayerPatch")) {
+            line = text;
+            // L10N(max=150): added after the server's reason when a livery is too big to share; LiveryLayerPatch is a mod
+            text += std::string(" ") + FH2_TR(g_api, g_mod, "popup.layer_patch", "LiveryLayerPatch lets you add more layers than can be shared.");
+        }
     } else {
         return;
     }
-    notify_request_failed(seen, text);
+    notify_request_failed(seen, text.c_str(), true, line.c_str());
 }
 
 // With the detailed log on, every Scoreboard call's request and reply bodies go to communitygarage/captures/, to work
@@ -803,6 +836,14 @@ bool xhr_bridge_fetch_drivatar_names(std::vector<std::string>* out) {
         logf("drivatar names: the server didn't send them (hr 0x%08lx, HTTP %lu)", (unsigned long)hr, (unsigned long)r.status);
         return false;
     }
+    // The server sends text/plain. Something in front of it can answer 200 with a page of its own instead: the host's
+    // bot check ("One moment, please...", issue #7) put its HTML lines on the AI drivers. Such a reply is refused whole.
+    std::wstring type;
+    if (!header_value(r.rawHeaders, L"Content-Type", type) || type.rfind(L"text/plain", 0) != 0) {
+        logf("drivatar names: the reply isn't the server's list (Content-Type \"%s\"); the game's own names",
+             narrow(type).c_str());
+        return false;
+    }
     std::string text(r.respBody.begin(), r.respBody.end());
     size_t at = 0;
     while (at < text.size() && out->size() < 26) {
@@ -810,7 +851,13 @@ bool xhr_bridge_fetch_drivatar_names(std::vector<std::string>* out) {
         std::string line = text.substr(at, nl == std::string::npos ? std::string::npos : nl - at);
         at = nl == std::string::npos ? text.size() : nl + 1;
         while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) line.pop_back();
-        if (!line.empty()) out->push_back(line);
+        if (line.empty()) continue;
+        if (line.size() > 64 || line.find_first_of("<>") != std::string::npos) {
+            logf("drivatar names: the reply has a line that isn't a name (\"%.40s\"); the game's own names", line.c_str());
+            out->clear();
+            return false;
+        }
+        out->push_back(line);
     }
     return true;
 }

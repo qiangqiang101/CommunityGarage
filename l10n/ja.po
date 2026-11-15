@@ -1,0 +1,189 @@
+# Japanese (ja) for CommunityGarage.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ja\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. a switch on the mod's page
+#: mod/src/communitygarage.cpp:1384
+#, max-length:30
+msgctxt "row.CheckUpdates.label"
+msgid "Check for updates"
+msgstr "アップデートを確認"
+
+#: mod/src/communitygarage.cpp:1385
+#, max-length:450
+msgctxt "row.CheckUpdates.description"
+msgid "Let the mod platform look on GitHub, about every six hours, for a newer Community Garage and tell you on the title screen. Nothing is downloaded or installed for you. Nothing else is sent to GitHub."
+msgstr "MOD プラットフォームが約 6 時間ごとに GitHub で Community Garage の新しいバージョンを確認し、タイトル画面でお知らせします。自動でダウンロードやインストールは行いません。GitHub にほかの情報は送信されません。"
+
+#. a switch on the mod's page; the economy values are race payouts
+#: mod/src/communitygarage.cpp:1397
+#, max-length:30
+msgctxt "row.ServerEconomy.label"
+msgid "Use server economy values"
+msgstr "サーバーの報酬設定を使う"
+
+#: mod/src/communitygarage.cpp:1398
+#, max-length:450
+msgctxt "row.ServerEconomy.description"
+msgid "Take race payouts (credits and XP) from the Community Garage server. Turn it off to keep the game's own built-in values; the mod then doesn't ask the server for them."
+msgstr "レースの報酬 (クレジットと XP) を Community Garage サーバーから取得します。オフにするとゲーム本来の値を使い、サーバーには問い合わせません。"
+
+#. a switch on the mod's page; use the game's own word for Drivatars
+#: mod/src/communitygarage.cpp:1410
+#, max-length:30
+msgctxt "row.ServerDrivatarNames.label"
+msgid "Drivatar names from the server"
+msgstr "サーバーの Drivatar 名"
+
+#: mod/src/communitygarage.cpp:1411
+#, max-length:450
+msgctxt "row.ServerDrivatarNames.description"
+msgid "Give the AI drivers the names of Community Garage players, a new random pick each time you start the game. Turn it off to keep the game's own AI driver names."
+msgstr "AI ドライバーに Community Garage のプレイヤー名を付けます。ゲームを起動するたびにランダムに選ばれます。オフにするとゲーム本来の名前のままです。"
+
+#. a switch on the mod's page; keep the file name fh2-mods\platform.log as it is
+#: mod/src/communitygarage.cpp:1423
+#, max-length:30
+msgctxt "row.DebugLog.label"
+msgid "Detailed log (troubleshooting)"
+msgstr "詳細ログ (トラブル対応用)"
+
+#: mod/src/communitygarage.cpp:1424
+#, max-length:450
+msgctxt "row.DebugLog.description"
+msgid "Writes much more about what the mod does to fh2-mods\\platform.log. Turn it on only if asked to when reporting a problem; it adds extra hooks to the game and makes the log large."
+msgstr "MOD の動作をより詳しく fh2-mods\\platform.log に書き込みます。問題を報告するときに頼まれた場合だけオンにしてください。ゲームに追加のフックを入れるため、ログが大きくなります。"
+
+#. a link on the mod's page that opens the mod's GitHub page
+#: mod/src/communitygarage.cpp:1437
+#, max-length:30
+msgctxt "row.Website.label"
+msgid "Community Garage on GitHub"
+msgstr "GitHub の Community Garage"
+
+#: mod/src/communitygarage.cpp:1438
+#, max-length:450
+msgctxt "row.Website.description"
+msgid "Releases, what's new, and the player guide."
+msgstr "リリース、新機能、プレイヤーガイド。"
+
+#. the title screen, three lines of up to 40 characters (\n starts one)
+#: mod/src/communitygarage.cpp:1480
+#, max-length:120
+msgctxt "notice.unsupported"
+msgid ""
+"Community Garage doesn't support this\n"
+"Azimuth version yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "Community Garage はこのバージョンの\nAzimuth にまだ対応していないため\n共有はオフです。更新をお待ちください。"
+
+#. as above; {version} is Azimuth's version number, as 1.0.5
+#: mod/src/communitygarage.cpp:1483
+#, max-length:120
+msgctxt "notice.unsupported.version"
+msgid ""
+"Community Garage doesn't support\n"
+"Azimuth {version} yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "Community Garage は Azimuth {version} に\nまだ対応していないため、共有はオフです。\nアップデートをお待ちください。"
+
+#: mod/src/communitygarage.cpp:1534
+#, max-length:450
+msgctxt "mod.description"
+msgid "Share and download Forza Horizon 2 liveries, tunes and group vinyls from the game's own menus, through the Community Garage server. Needs an internet connection. Your account key, name and what you share go to the community server only."
+msgstr "Forza Horizon 2 のデザイン、チューニング設定、バイナル グループをゲームのメニューから共有・ダウンロードできます。Community Garage サーバーを使います。インターネット接続が必要です。アカウント キー、名前、共有した内容はコミュニティー サーバーにのみ送信されます。"
+
+#. the Storefront's error popup, and a HUD pop-up, after picking a tune
+#: mod/src/xhr_bridge.cpp:463
+#, max-length:45
+msgctxt "popup.foreign_tune"
+msgid "This tune was made for a different car."
+msgstr "このチューニングは別のクルマ用です。"
+
+#. the Storefront's error popup after a download; {size} is the livery's size in KB
+#: mod/src/xhr_bridge.cpp:491
+#, max-length:300
+msgctxt "popup.livery_too_big"
+msgid "This livery is too big for the game to load ({size} KB). Liveries over about 337 KB can't be downloaded."
+msgstr "このデザインは大きすぎてゲームで読み込めません ({size} KB)。約 337 KB を超えるデザインはダウンロードできません。"
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:508
+#, max-length:300
+msgctxt "popup.timeout"
+msgid "The server took too long to answer. Try again in a moment."
+msgstr "サーバーからの反応がありません。しばらくしてからもう一度お試しください。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:510
+#, max-length:45
+msgctxt "popup.timeout.line"
+msgid "The server is slow to answer. Try again."
+msgstr "サーバーの反応が遅すぎます。"
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:514
+#, max-length:300
+msgctxt "popup.secure"
+msgid "Couldn't make a secure connection to the server."
+msgstr "サーバーとの安全な接続を確立できませんでした。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:516
+#, max-length:45
+msgctxt "popup.secure.line"
+msgid "No secure connection to the server."
+msgstr "サーバーと安全に接続できません。"
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:522
+#, max-length:300
+msgctxt "popup.unreachable"
+msgid "Can't reach the server. Check your internet connection."
+msgstr "サーバーに接続できません。インターネット接続を確認してください。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:524
+#, max-length:45
+msgctxt "popup.unreachable.line"
+msgid "Can't reach the server. Check your internet."
+msgstr "サーバーに接続できません。"
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is an error number, as 0x80072EE2
+#: mod/src/xhr_bridge.cpp:528
+#, max-length:45
+msgctxt "popup.unreachable.code"
+msgid "Can't reach the server (error {code})."
+msgstr "サーバー接続エラー ({code})"
+
+#. the Storefront's error popup; {status} is an HTTP status, as 503
+#: mod/src/xhr_bridge.cpp:533
+#, max-length:300
+msgctxt "popup.http"
+msgid "The server had a problem (HTTP {status}). Try again later."
+msgstr "サーバーで問題が発生しました (HTTP {status})。後でもう一度お試しください。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:535
+#, max-length:45
+msgctxt "popup.http.line"
+msgid "Server problem (HTTP {status}). Try again later."
+msgstr "サーバーエラー (HTTP {status})。"
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is the server's error number
+#: mod/src/xhr_bridge.cpp:544
+#, max-length:45
+msgctxt "popup.refused"
+msgid "The server turned this down (code {code})."
+msgstr "サーバーが拒否しました ({code})"
+
+#. added after the server's reason when a livery is too big to share; LiveryLayerPatch is a mod
+#: mod/src/xhr_bridge.cpp:551
+#, max-length:150
+msgctxt "popup.layer_patch"
+msgid "LiveryLayerPatch lets you add more layers than can be shared."
+msgstr "LiveryLayerPatch を使うと、共有できる数より多くのレイヤーを追加できます。"

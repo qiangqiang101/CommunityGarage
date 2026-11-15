@@ -8,6 +8,9 @@
 // ".Trial" twin). We swap the host and port pointers of those two entries for
 // strings of our own, from communitygarage\server.ini next to azimuth.exe.
 #include "fh2mod.h"
+#include "fh2mod_l10n.h"
+#include "fh2mod_ui.h"
+#include "communitygarage_l10n.inc"   // platform/tools/l10n/po2inc.py from l10n/*.po
 #include "notify.hpp"
 #include "xhr_bridge.hpp"
 
@@ -284,6 +287,43 @@ DWORD WINAPI rivals_unlock_thread(LPVOID param) {
         }
         Sleep(1000);
     }
+}
+
+// A byte patch that another mod may already have made: Extra Options writes some of the same bytes before the game's
+// code is ready, and the platform then refuses ours (it checks against the exe on disk), so that case is only logged.
+void patch_unless_done(uintptr_t base, const char* name, uintptr_t va, const uint8_t* was, const uint8_t* now, uint32_t n) {
+    void* at = reinterpret_cast<void*>(base + (va - kImageBase));
+    uint8_t cur[16] = {};
+    if (n <= sizeof cur && safe_read(at, cur, n) && std::memcmp(cur, now, n) == 0) {
+        logf("%s: already made (Extra Options)", name);
+        return;
+    }
+    FH2Hook* h = g_api->patch_bytes(g_mod, name, at, was, now, n);
+    if (!h || !g_api->enable_hooks(g_mod, h)) logf("%s: the game code didn't look as expected, leaving it alone", name);
+}
+
+// ---- The pause menu's Y button. PauseMenuTiled copies RivalsModule+0xF0 (the flag rivals_unlock_thread sets) to its
+// +0x537 and the signed-in check (game+0x80F6B0) to +0x538 (game+0xDDAD89). With both set, its refresh (game+0xDDAC80)
+// puts "Invite to Party" on footer button 3, Y (game+0xDDB591), and the Y handler (game+0xDAFAD0, which also needs
+// +0x536) opens the game party screen: there are no Xbox parties under Azimuth, and it took the place of Extra
+// Options' "Change time" on Y (issue #6). Both take the branch an offline game takes, so Y does what it did before.
+//
+// ---- Parental locks. Azimuth answers the Xbox privilege checks as restricted. The profile's two requests, multiplayer
+// (privilege 254, game+0x1249C50) and user-created content (247, game+0x1249E90), are made to store Allowed (4) in
+// the profile's status (+0x44, +0x48) and return, as Extra Options' DisableParentalLocks does (docs/ACCOUNT_SAVE_NOTES.md
+// there), so sharing and downloading aren't held back without Extra Options too.
+void install_party_and_privilege_patches(uintptr_t base) {
+    if (g_api->api_version < 7) return;
+    static const uint8_t footer_was[] = {0x0F, 0x84, 0xA4, 0x00, 0x00, 0x00}, footer_now[] = {0xE9, 0xA5, 0x00, 0x00, 0x00, 0x90};
+    patch_unless_done(base, "pause menu: no Invite to Party on Y", 0x140DDB598, footer_was, footer_now, sizeof footer_now);
+    static const uint8_t press_was[] = {0x74, 0x7A}, press_now[] = {0xEB, 0x7A};
+    patch_unless_done(base, "pause menu: Y doesn't open the party", 0x140DAFAE3, press_was, press_now, sizeof press_now);
+
+    static const uint8_t entry[]   = {0x48, 0x89, 0x4C, 0x24, 0x08, 0x57, 0x48, 0x83, 0xEC, 0x30};
+    static const uint8_t allow44[] = {0xC7, 0x41, 0x44, 0x04, 0x00, 0x00, 0x00, 0xC3, 0x90, 0x90};   // mov dword [rcx+0x44], 4; ret
+    static const uint8_t allow48[] = {0xC7, 0x41, 0x48, 0x04, 0x00, 0x00, 0x00, 0xC3, 0x90, 0x90};   // mov dword [rcx+0x48], 4; ret
+    patch_unless_done(base, "parental locks: multiplayer allowed", 0x141249C50, entry, allow44, sizeof allow44);
+    patch_unless_done(base, "parental locks: user content allowed", 0x141249E90, entry, allow48, sizeof allow48);
 }
 
 // ---- Game DVR clips. The game records a clip of some moments (beating a Rival, among others: GameTunableSettings'
@@ -1219,6 +1259,7 @@ DWORD WINAPI worker(LPVOID) {
         FH2Hook* h = g_api->patch_bytes(g_mod, "Clubs tab off", reinterpret_cast<void*>(base + (0x1406F0899 - kImageBase)), &was, &now, 1);
         if (!h || !g_api->enable_hooks(g_mod, h)) logf("Clubs tab: the game code didn't look as expected, leaving it alone");
     }
+    install_party_and_privilege_patches(base);
     install_pack_skip(base);
     notify_install(g_api, g_mod, base);
     // What changes the game's behaviour: the date default, the Xbox token callback and strings, the login-listener skip, the poll
@@ -1339,9 +1380,11 @@ static void add_mods_page_rows(const FH2ModApi* api) {
         FH2Setting s{};
         s.size          = sizeof s;
         s.key           = "CheckUpdates";
-        s.label         = "Check for updates";
-        s.description   = "Let the mod platform look on GitHub, about every six hours, for a newer Community Garage and tell you on the "
-                          "title screen. Nothing is downloaded or installed for you. Nothing else is sent to GitHub.";
+        // L10N: a switch on the mod's page
+        s.label         = FH2_TR(api, g_mod, "row.CheckUpdates.label", "Check for updates");
+        s.description   = FH2_TR(api, g_mod, "row.CheckUpdates.description",
+                                 "Let the mod platform look on GitHub, about every six hours, for a newer Community Garage and tell you "
+                                 "on the title screen. Nothing is downloaded or installed for you. Nothing else is sent to GitHub.");
         s.value         = GetPrivateProfileIntW(L"updates", L"check", 1, g_ini_path.c_str()) != 0;
         s.needs_restart = 1;
         s.on_change     = on_setting_changed;
@@ -1350,9 +1393,11 @@ static void add_mods_page_rows(const FH2ModApi* api) {
         FH2Setting e{};
         e.size          = sizeof e;
         e.key           = "ServerEconomy";
-        e.label         = "Use server economy values";
-        e.description   = "Take race payouts (credits and XP) from the Community Garage server. Turn it off to keep the game's own "
-                          "built-in values; the mod then doesn't ask the server for them.";
+        // L10N: a switch on the mod's page; the economy values are race payouts
+        e.label         = FH2_TR(api, g_mod, "row.ServerEconomy.label", "Use server economy values");
+        e.description   = FH2_TR(api, g_mod, "row.ServerEconomy.description",
+                                 "Take race payouts (credits and XP) from the Community Garage server. Turn it off to keep the game's "
+                                 "own built-in values; the mod then doesn't ask the server for them.");
         e.value         = GetPrivateProfileIntW(L"economy", L"use_server_values", 1, g_ini_path.c_str()) != 0;
         e.needs_restart = 1;
         e.on_change     = on_setting_changed;
@@ -1361,9 +1406,11 @@ static void add_mods_page_rows(const FH2ModApi* api) {
         FH2Setting n{};
         n.size          = sizeof n;
         n.key           = "ServerDrivatarNames";
-        n.label         = "Drivatar names from the server";
-        n.description   = "Give the AI drivers the names of Community Garage players, a new random pick each time you start the game. "
-                          "Turn it off to keep the game's own AI driver names.";
+        // L10N: a switch on the mod's page; use the game's own word for Drivatars
+        n.label         = FH2_TR(api, g_mod, "row.ServerDrivatarNames.label", "Drivatar names from the server");
+        n.description   = FH2_TR(api, g_mod, "row.ServerDrivatarNames.description",
+                                 "Give the AI drivers the names of Community Garage players, a new random pick each time you start the "
+                                 "game. Turn it off to keep the game's own AI driver names.");
         n.value         = drivatar_names_from_server(g_ini_path);
         n.needs_restart = 1;
         n.on_change     = on_setting_changed;
@@ -1372,9 +1419,11 @@ static void add_mods_page_rows(const FH2ModApi* api) {
         FH2Setting d{};
         d.size          = sizeof d;
         d.key           = "DebugLog";
-        d.label         = "Detailed log (troubleshooting)";
-        d.description   = "Writes much more about what the mod does to fh2-mods\\platform.log. Turn it on only if asked to when "
-                          "reporting a problem; it adds extra hooks to the game and makes the log large.";
+        // L10N: a switch on the mod's page; keep the file name fh2-mods\platform.log as it is
+        d.label         = FH2_TR(api, g_mod, "row.DebugLog.label", "Detailed log (troubleshooting)");
+        d.description   = FH2_TR(api, g_mod, "row.DebugLog.description",
+                                 "Writes much more about what the mod does to fh2-mods\\platform.log. Turn it on only if asked to when "
+                                 "reporting a problem; it adds extra hooks to the game and makes the log large.");
         d.value         = GetPrivateProfileIntW(L"debug", L"trace", 0, g_ini_path.c_str()) != 0;
         d.needs_restart = 1;
         d.on_change     = on_setting_changed;
@@ -1384,8 +1433,9 @@ static void add_mods_page_rows(const FH2ModApi* api) {
         FH2Setting l{};
         l.size        = sizeof l;
         l.key         = "Website";
-        l.label       = "Community Garage on GitHub";
-        l.description = "Releases, what's new, and the player guide.";
+        // L10N: a link on the mod's page that opens the mod's GitHub page
+        l.label       = FH2_TR(api, g_mod, "row.Website.label", "Community Garage on GitHub");
+        l.description = FH2_TR(api, g_mod, "row.Website.description", "Releases, what's new, and the player guide.");
         l.kind        = FH2_SETTING_LINK;
         l.url         = "https://github.com/qiangqiang101/CommunityGarage";
         api->add_setting(g_mod, &l);
@@ -1424,10 +1474,30 @@ static bool azimuth_supported(const FH2ModApi* api) {
     auto* nt   = reinterpret_cast<IMAGE_NT_HEADERS*>(base + reinterpret_cast<IMAGE_DOS_HEADER*>(base)->e_lfanew);
     logf("Azimuth %s (azimuth.exe build 0x%08lx) isn't supported by this version; the mod is off, so the game plays offline",
          version.empty() ? "?" : version.c_str(), (unsigned long)nt->FileHeader.TimeDateStamp);
-    std::string notice = "Community Garage doesn't support\nAzimuth " + (version.empty() ? std::string("this version") : version) +
-                         " yet, so sharing is off.\nLook for a Community Garage update.";
+    // With the version filled in, the text is the mod's own: it stays in the language the game had at start-up.
+    std::string notice = version.empty()
+        // L10N(max=120): the title screen, three lines of up to 40 characters (\n starts one)
+        ? FH2_TR(api, g_mod, "notice.unsupported",
+                 "Community Garage doesn't support this\nAzimuth version yet, so sharing is off.\nLook for a Community Garage update.")
+        // L10N(max=120): as above; {version} is Azimuth's version number, as 1.0.5
+        : fh2_fill(FH2_TR(api, g_mod, "notice.unsupported.version",
+                          "Community Garage doesn't support\nAzimuth {version} yet, so sharing is off.\nLook for a Community Garage update."),
+                   {{"version", version}});
     api->set_notice(g_mod, notice.c_str());
     return false;
+}
+
+// The blue globes on the map: the online Road Trips, public and friends', one per festival town ("CASTELLETTO Online
+// Road Trip, press X to join"). They show once RivalsModule+0xF0 is set (rivals_unlock_thread), but there's no online
+// play behind them. Their map element starts disabled and MapContextDestination/FriendOnlineRoadTripProviderComponent
+// turns it on, and draws it, when the game is online, so the map profiles don't hide them. The 16 entities are all in
+// one entity group, which entities_global.xml includes and nothing else names: an empty group leaves them out.
+static void hide_online_road_trips(const FH2ModApi* api) {
+    static const char kEmpty[] = "<entity_group id=\"network_online_road_trip_activations\">\n</entity_group>\n";
+    if (api->set_file(g_mod, "EntityModel/Network/network_online_road_trip_activations.xml", kEmpty, sizeof kEmpty - 1))
+        logf("online Road Trips: left off the map (there's no online play behind them)");
+    else
+        logf("online Road Trips: their entity group couldn't be replaced (another mod has it?); the globes stay");
 }
 
 FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
@@ -1439,14 +1509,17 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     info.github_repo      = "qiangqiang101/CommunityGarage";
     info.platform_version = FH2MOD_PLATFORM_VERSION;
     info.check_updates    = updates_enabled(api->azimuth_dir) ? 1 : 0;
-    info.description      = "Share and download Forza Horizon 2 liveries, tunes and group vinyls from the game's own menus, through the "
-                            "Community Garage server. Needs an internet connection. Your account key, name and what you share go to the "
-                            "community server only.";   // [updates] check= in server.ini, on by default
+    info.description      = FH2_TR_DESCRIPTION("Share and download Forza Horizon 2 liveries, tunes and group vinyls from the game's own "
+                                               "menus, through the Community Garage server. Needs an internet connection. Your account "
+                                               "key, name and what you share go to the community server only.");   // [updates] check= in server.ini, on by default
     // FH2MP points the game's online services at its own servers, as this mod does at ours: the two collide, so stay
     // out of FH2MP launches (API 9; register_mod returns NULL there). Other launches aren't affected.
     info.offline_only     = 1;
     g_mod = api->register_mod(&info);
     if (!g_mod) return 1;
+    FH2_ADD_TRANSLATIONS(api, g_mod, communitygarage_translations);
+    fh2_helpers_init(api, g_mod);
+    fh2ui_ui_uses(FH2_UI_USES_TOASTS);   // failures nothing else explained show as pop-ups (notify.cpp)
     if (api->api_version < 7) {
         api->log(g_mod, "needs platform API 7 (byte patches); reinstall with a newer DWrite.dll");
         return 1;
@@ -1455,6 +1528,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     add_mods_page_rows(api);
     if (!azimuth_supported(api)) return 0;
     if (!load_config(api->azimuth_dir)) return 0;
+    hide_online_road_trips(api);
     if (HANDLE t = CreateThread(nullptr, 0, worker, nullptr, 0, nullptr)) CloseHandle(t);
     return 0;
 }

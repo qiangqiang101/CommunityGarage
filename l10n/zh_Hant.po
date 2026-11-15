@@ -1,0 +1,189 @@
+# Traditional Chinese (zh-Hant) for CommunityGarage.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh_Hant\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. a switch on the mod's page
+#: mod/src/communitygarage.cpp:1384
+#, max-length:30
+msgctxt "row.CheckUpdates.label"
+msgid "Check for updates"
+msgstr "檢查更新"
+
+#: mod/src/communitygarage.cpp:1385
+#, max-length:450
+msgctxt "row.CheckUpdates.description"
+msgid "Let the mod platform look on GitHub, about every six hours, for a newer Community Garage and tell you on the title screen. Nothing is downloaded or installed for you. Nothing else is sent to GitHub."
+msgstr "讓模組平台大約每六小時到 GitHub 查看是否有較新版的 Community Garage，並在標題畫面上通知您。不會替您下載或安裝任何東西，也不會傳送其他資料給 GitHub。"
+
+#. a switch on the mod's page; the economy values are race payouts
+#: mod/src/communitygarage.cpp:1397
+#, max-length:30
+msgctxt "row.ServerEconomy.label"
+msgid "Use server economy values"
+msgstr "使用伺服器的比賽獎金"
+
+#: mod/src/communitygarage.cpp:1398
+#, max-length:450
+msgctxt "row.ServerEconomy.description"
+msgid "Take race payouts (credits and XP) from the Community Garage server. Turn it off to keep the game's own built-in values; the mod then doesn't ask the server for them."
+msgstr "從 Community Garage 伺服器取得比賽獎金(CR 和 XP)。關閉後會使用遊戲內建的數值，模組也不會再向伺服器要求這些數值。"
+
+#. a switch on the mod's page; use the game's own word for Drivatars
+#: mod/src/communitygarage.cpp:1410
+#, max-length:30
+msgctxt "row.ServerDrivatarNames.label"
+msgid "Drivatar names from the server"
+msgstr "使用伺服器的 Drivatar 名稱"
+
+#: mod/src/communitygarage.cpp:1411
+#, max-length:450
+msgctxt "row.ServerDrivatarNames.description"
+msgid "Give the AI drivers the names of Community Garage players, a new random pick each time you start the game. Turn it off to keep the game's own AI driver names."
+msgstr "將 AI 車手改用 Community Garage 玩家的名稱，每次啟動遊戲時都會重新隨機挑選。關閉後會保留遊戲原本的 AI 車手名稱。"
+
+#. a switch on the mod's page; keep the file name fh2-mods\platform.log as it is
+#: mod/src/communitygarage.cpp:1423
+#, max-length:30
+msgctxt "row.DebugLog.label"
+msgid "Detailed log (troubleshooting)"
+msgstr "詳細記錄(疑難排解用)"
+
+#: mod/src/communitygarage.cpp:1424
+#, max-length:450
+msgctxt "row.DebugLog.description"
+msgid "Writes much more about what the mod does to fh2-mods\\platform.log. Turn it on only if asked to when reporting a problem; it adds extra hooks to the game and makes the log large."
+msgstr "將模組運作的更多細節寫入 fh2-mods\\platform.log。請只在回報問題且被要求時才開啟；這會讓遊戲多執行一些監控程式，並讓記錄檔變得很大。"
+
+#. a link on the mod's page that opens the mod's GitHub page
+#: mod/src/communitygarage.cpp:1437
+#, max-length:30
+msgctxt "row.Website.label"
+msgid "Community Garage on GitHub"
+msgstr "GitHub 上的 Community Garage"
+
+#: mod/src/communitygarage.cpp:1438
+#, max-length:450
+msgctxt "row.Website.description"
+msgid "Releases, what's new, and the player guide."
+msgstr "版本發佈、更新內容及玩家指南。"
+
+#. the title screen, three lines of up to 40 characters (\n starts one)
+#: mod/src/communitygarage.cpp:1480
+#, max-length:120
+msgctxt "notice.unsupported"
+msgid ""
+"Community Garage doesn't support this\n"
+"Azimuth version yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "Community Garage 尚未支援\n此 Azimuth 版本，因此已關閉分享功能。\n請留意 Community Garage 的更新。"
+
+#. as above; {version} is Azimuth's version number, as 1.0.5
+#: mod/src/communitygarage.cpp:1483
+#, max-length:120
+msgctxt "notice.unsupported.version"
+msgid ""
+"Community Garage doesn't support\n"
+"Azimuth {version} yet, so sharing is off.\n"
+"Look for a Community Garage update."
+msgstr "Community Garage 尚未支援\nAzimuth {version}，因此已關閉分享功能。\n請留意 Community Garage 的更新。"
+
+#: mod/src/communitygarage.cpp:1534
+#, max-length:450
+msgctxt "mod.description"
+msgid "Share and download Forza Horizon 2 liveries, tunes and group vinyls from the game's own menus, through the Community Garage server. Needs an internet connection. Your account key, name and what you share go to the community server only."
+msgstr "直接在遊戲選單中分享及下載 Forza Horizon 2 的設計、調校設定和彩繪紋飾群組，透過 Community Garage 伺服器進行。需要網際網路連線。您的帳戶識別碼、名稱和分享的內容只會傳送到社群伺服器。"
+
+#. the Storefront's error popup, and a HUD pop-up, after picking a tune
+#: mod/src/xhr_bridge.cpp:463
+#, max-length:45
+msgctxt "popup.foreign_tune"
+msgid "This tune was made for a different car."
+msgstr "這個調校設定是為其他車輛製作的。"
+
+#. the Storefront's error popup after a download; {size} is the livery's size in KB
+#: mod/src/xhr_bridge.cpp:491
+#, max-length:300
+msgctxt "popup.livery_too_big"
+msgid "This livery is too big for the game to load ({size} KB). Liveries over about 337 KB can't be downloaded."
+msgstr "這個設計太大，遊戲無法載入({size} KB)。超過約 337 KB 的設計無法下載。"
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:508
+#, max-length:300
+msgctxt "popup.timeout"
+msgid "The server took too long to answer. Try again in a moment."
+msgstr "伺服器回應時間過長，請稍後再試。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:510
+#, max-length:45
+msgctxt "popup.timeout.line"
+msgid "The server is slow to answer. Try again."
+msgstr "伺服器回應太慢，請再試一次。"
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:514
+#, max-length:300
+msgctxt "popup.secure"
+msgid "Couldn't make a secure connection to the server."
+msgstr "無法與伺服器建立安全連線。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:516
+#, max-length:45
+msgctxt "popup.secure.line"
+msgid "No secure connection to the server."
+msgstr "無法與伺服器建立安全連線。"
+
+#. the Storefront's error popup
+#: mod/src/xhr_bridge.cpp:522
+#, max-length:300
+msgctxt "popup.unreachable"
+msgid "Can't reach the server. Check your internet connection."
+msgstr "無法連線到伺服器，請檢查您的網際網路連線。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:524
+#, max-length:45
+msgctxt "popup.unreachable.line"
+msgid "Can't reach the server. Check your internet."
+msgstr "無法連線到伺服器，請檢查網路。"
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is an error number, as 0x80072EE2
+#: mod/src/xhr_bridge.cpp:528
+#, max-length:45
+msgctxt "popup.unreachable.code"
+msgid "Can't reach the server (error {code})."
+msgstr "無法連線到伺服器(錯誤 {code})。"
+
+#. the Storefront's error popup; {status} is an HTTP status, as 503
+#: mod/src/xhr_bridge.cpp:533
+#, max-length:300
+msgctxt "popup.http"
+msgid "The server had a problem (HTTP {status}). Try again later."
+msgstr "伺服器發生問題(HTTP {status})，請稍後再試。"
+
+#. the same, on a HUD pop-up under COMMUNITY GARAGE
+#: mod/src/xhr_bridge.cpp:535
+#, max-length:45
+msgctxt "popup.http.line"
+msgid "Server problem (HTTP {status}). Try again later."
+msgstr "伺服器發生問題(HTTP {status})，請稍後再試。"
+
+#. the Storefront's error popup, and a HUD pop-up; {code} is the server's error number
+#: mod/src/xhr_bridge.cpp:544
+#, max-length:45
+msgctxt "popup.refused"
+msgid "The server turned this down (code {code})."
+msgstr "伺服器拒絕了這項要求(代碼 {code})。"
+
+#. added after the server's reason when a livery is too big to share; LiveryLayerPatch is a mod
+#: mod/src/xhr_bridge.cpp:551
+#, max-length:150
+msgctxt "popup.layer_patch"
+msgid "LiveryLayerPatch lets you add more layers than can be shared."
+msgstr "LiveryLayerPatch 讓您加入的圖層數量可以超過分享的上限。"

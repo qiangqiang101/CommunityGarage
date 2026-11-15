@@ -105,3 +105,20 @@ The Clubs tab came on once the game was logged in to the community server (it wa
 map). The mod patches the immediate byte (game+0x6F0899) to 0, always, expecting the original 1 there; the tab disappears.
 `economy_probe` / `economy_scan` in server.ini are diagnostics only: the economy object's default values were not found.
 
+
+## RivalsModule+0xF0 is the game's "online" flag (2026-11-15)
+The flag the mod sets for Rivals ([game+0x34D6348]+0xF0) is read in about 30 places, not only by Rivals: car meets
+(game+0xC9CAC0, game+0x88D200), Storefront, Clans, the marketplace and LiveStrings pages, and the pause menu. Forcing it
+makes the game show online-only things: the blue globes on the map ("<town> Online Road Trip, press X to join") came with
+1.2.1. Hiding their types in the map profiles (media/ui/MapProfile*.xml) did nothing: the element starts disabled and
+MapContextDestination/FriendOnlineRoadTripProviderComponent enables and draws it when online. The mod replaces
+EntityModel/Network/network_online_road_trip_activations.xml (the 16 activators, included only by entities_global.xml)
+with an empty entity group. Loose files in media/ui are overridden too (checked in memory), so that wasn't the cause.
+- PauseMenuTiled (vtable game+0x2E14640; init game+0xDC6E30 and update game+0xDCE660, the slots Extra Options' weather
+  plugin hooks at game+0x2E14310/0x2E14350) copies the flag to page+0x537 and game+0x80F6B0() to +0x538 in its refresh
+  (game+0xDDAD89, function game+0xDDAC80). With both set, the refresh puts "Invite to Party" on footer 3 (Y, game+0xDDB591)
+  and the Y handler (game+0xDAFAD0, also needs +0x536) fires the stateflow exit `invite_to_game_party` (pause.xml ->
+  network_party.show_invite_to_party). The mod makes both branches always go the offline way (issue #6).
+- Footer ids for game+0xB00010 (set label), game+0xB5F0A0 (hide) and game+0xB6B0F0 (set): 0 A, 1 B, 2 X, 3 Y, 5 View.
+- Parental locks: the profile's privilege requests game+0x1249C50 (254 multiplayer, status at +0x44) and game+0x1249E90
+  (247 user content, +0x48); Allowed is 4. Same patch as Extra Options' DisableParentalLocks, skipped when it's already made.
